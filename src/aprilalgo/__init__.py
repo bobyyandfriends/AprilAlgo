@@ -1,6 +1,4 @@
-"""
-AprilAlgo — A data science and analysis toolkit.
-"""
+"""AprilAlgo — modular multi-timeframe trading backtester."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Joshua"

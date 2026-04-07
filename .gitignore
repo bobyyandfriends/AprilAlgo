@@ -160,8 +160,16 @@ __marimo__/
 # VS Code
 # .vscode/
 
-# Data files (uncomment as needed for your project)
-# data/raw/
-# data/processed/
-# *.csv
-# *.xlsx
+# Data files — CSV price data is too large for git
+data/
+*.csv
+*.xlsx
+
+# Backtest outputs
+outputs/
+
+# Saved ML models
+models/
+
+# Test files
+test_*.py

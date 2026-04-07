@@ -1,0 +1,15 @@
+# AprilAlgo — default backtest configuration
+
+initial_capital: 100000
+commission: 0.0
+slippage: 0.0005
+
+symbol: AAPL
+timeframe: daily
+strategy: rsi_sma
+
+strategy_params:
+  rsi_period: 14
+  sma_period: 50
+  rsi_buy: 30
+  rsi_sell: 70
