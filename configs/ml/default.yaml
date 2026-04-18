@@ -18,6 +18,14 @@ data_dir: tests/fixtures
 #   threshold: 5
 #   source_timeframe: daily
 
+# Optional: volatility regime bucket as a feature (see docs/DATA_SCHEMA.md §14).
+# regime:
+#   enabled: false
+#   window: 20
+#   n_buckets: 3
+#   use_hmm: false
+#   groupby: false        # true: train one bundle per vol_regime under regime_<k>/ + regime_index.json (§15)
+
 task: binary
 random_state: 42
 importance_repeats: 3
@@ -26,6 +34,15 @@ walk_forward:
   n_folds: 4
   min_train: 50
   test_size: null
+
+# Walk-forward hyperparameter search (CLI ``wf-tune``). Uses ``expand_grid`` on dict ``grid``;
+# or set ``grid`` to a list of explicit XGBoost param dicts. Optional ``n_folds`` overrides the
+# walk-forward fold count passed to the tuner (defaults to ``walk_forward.n_folds``).
+wf_tuner:
+  metric: accuracy
+  n_folds: 2
+  grid:
+    max_depth: [2, 3]
 
 triple_barrier:
   upper_pct: 0.02
@@ -41,6 +58,12 @@ indicators:
 cv:
   n_splits: 3
   embargo: 1
+
+# Optional: meta-label logistic after `oof` (see docs/DATA_SCHEMA.md §13).
+# meta_label:
+#   n_splits: 3
+#   embargo: 1
+#   threshold: 0.5
 
 model:
   out_dir: models/xgboost/latest

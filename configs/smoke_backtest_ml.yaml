@@ -1,0 +1,7 @@
+# ML-driven backtest smoke: uses bundle from configs/ml/default.yaml train path.
+symbol: TEST
+timeframe: daily
+data_dir: tests/fixtures
+strategy: ml_xgboost
+strategy_params:
+  model_dir: models/xgboost/latest

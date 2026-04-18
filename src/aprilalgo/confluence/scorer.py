@@ -36,8 +36,13 @@ def score_confluence(
         out["confluence_direction"] = "NEUTRAL"
         return out
 
-    bull_df = out[bull_cols].astype(float)
-    bear_df = out[bear_cols].astype(float)
+    # Coerce non-numeric signal columns (e.g. indicator authors emitting strings
+    # like "True"/"False" or category dtypes) rather than raising the opaque
+    # ``ValueError: could not convert string to float`` from ``.astype(float)``
+    # (§AUDIT B12). ``pd.to_numeric(errors="coerce")`` turns un-parseable cells
+    # into NaN, which then drops cleanly out of the bull/bear totals below.
+    bull_df = out[bull_cols].apply(pd.to_numeric, errors="coerce").astype(float)
+    bear_df = out[bear_cols].apply(pd.to_numeric, errors="coerce").astype(float)
 
     out["bull_count"] = bull_df.sum(axis=1)
     out["bear_count"] = bear_df.sum(axis=1)

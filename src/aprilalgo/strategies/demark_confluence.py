@@ -66,6 +66,7 @@ class DeMarkConfluenceStrategy(BaseStrategy):
         df = super_smoother(df, period=self.ss_period)
         df = score_confluence(df)
         self._data = df
+        self._backtest_bars_df = df
 
     def on_bar(self, idx: int, row: pd.Series, portfolio: Portfolio) -> None:
         enriched = self._data.iloc[idx]

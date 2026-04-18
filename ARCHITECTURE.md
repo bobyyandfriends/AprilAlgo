@@ -2,7 +2,7 @@
 
 > **Version:** Design Doc v1.1 (living)  
 > **Date:** April 17, 2026  
-> **Status:** Baseline v0.4.1 shipped; sections below mix shipped modules and forward roadmap  
+> **Status:** **v0.5.0** shipped (ML-depth sprints); sections below mix shipped modules and forward roadmap  
 > **Scope:** v0.1 → v0.5+
 
 ---
@@ -51,45 +51,29 @@
 
 ## 2. Versioned Roadmap
 
-### v0.1 — Basic Backtester ✅ COMPLETE
-- Load OHLCV data from CSV
-- RSI, SMA, Bollinger Bands, Volume Trend indicators
-- Bar-by-bar backtest engine with Trade/Portfolio/Metrics
-- RSI+SMA strategy
-- CLI entry point
+> Shipped release notes live in [`CHANGELOG.md`](CHANGELOG.md) (v0.1.0 → v0.5.0). This section records only the **forward** roadmap; do not duplicate per-sprint history here.
 
-### v0.2 — Advanced Indicators + Multi-Timeframe + Data Fetcher
-- **Update data fetcher** to Massive (formerly Polygon.io) package
-- **Dual-signal indicators** — every indicator emits both bullish and bearish reinforcement signals
-- **DeMark indicators** (Sequential, Setup, Countdown)
-- **Hurst Exponent** (R/S method + rolling windows)
-- **Ehlers cycle indicators** (Super Smoother, Roofing Filter, Decycler)
-- **Turn Measurement Index (TMI)**
-- **Price-Volume Sequences** (state transitions)
-- **Multi-timeframe engine** — align and score indicators across timeframes
-- **Confluence scoring** — probability of setup success based on indicator agreement
-- **Parameter tuning engine** — grid search over indicator params (e.g. SMA 19 vs 20), find best combos per symbol/timeframe
-- **Fractional Kelly** position sizing
+### Shipped through v0.5.0
 
-### v0.3 — Machine Learning + UI ✅
-- **Triple-barrier labeling** for supervised learning targets
-- **XGBoost classifier** for signal generation
-- **Purged k-fold CV** (no temporal leakage)
-- **Feature importance** — gain/cover + permutation + SHAP baseline exports
-- **Streamlit UI** — charts, signal feed, dashboard, model trainer / metrics pages
-- **Signal logging** — JSONL with full schema hooks for outcomes and meta labels
+Everything described in `§3 Full Folder Structure` through `§8 Design Principles` below is shipped. Highlights:
 
-### v0.4 — Meta-Modeling + Advanced Features ✅ (baseline complete; polish continues)
-- **Meta-labeling** — secondary model on primary correctness (OOF / purged helpers)
-- **Information-driven bars** (volume, dollar, tick bars) — CLI + data module shipped
-- **Regime detection** — realized-vol quantile buckets + optional ``hmmlearn`` HMM path
-- **Walk-forward splits** — rolling windows + summary metrics + CLI / Streamlit surfacing
-- **Multi-asset portfolio runner** — per-symbol backtests with pooled capital options
-- **Export/reporting** — Jinja HTML sections (equity, metrics, importance, regime)
+- **v0.1–v0.2** — backtest engine, 11 dual-signal indicators, confluence, tuner, position sizing, Massive data fetcher.
+- **v0.3** — triple-barrier labels, XGBoost + purged CV, SHAP, Streamlit UI, `ml_xgboost` strategy, JSONL signal logging.
+- **v0.4 / v0.4.1** — meta-label helpers, sampling weights, regime tagging, walk-forward splits, portfolio runner, Jinja HTML report, information-driven bars, per-regime SHAP seeds.
+- **v0.5.0** — sample-weight plumbing, sequential bootstrap / uniqueness, primary OOF capture, meta-label bundle + strategy gate, regime as a feature, per-regime model routing, purged walk-forward tuner (core + CLI + Streamlit), stable HTML report section ids, optional `hmm` extra.
 
-### v0.5 — ML sampling + polish (in progress)
-- **Information bars in end-to-end ML** — optional YAML drives the same bar series for train, CV, predict, SHAP, walk-forward bar counts, and ``ml_xgboost`` backtest parity (recipe in ``meta.json``)
-- **SHAP / bars / walk-forward UX** — commentary, presets, deeper Streamlit analytics (polish)
+See `CHANGELOG.md` `## [0.5.0]` for the per-sprint diff.
+
+### Next target — v0.6.0+ (candidate themes)
+
+The active planning surface is [`PROJECT_STATE.md`](PROJECT_STATE.md) §3 "Next sprint". High-level themes under consideration:
+
+1. **Backtest correctness hardening** — compound-equity returns (`metrics_v2`), short-sale margin + borrow fees, formal strategy loop-frame contract.
+2. **ML pipeline plumbing** — thread `sample_weight` through `purged_cv_evaluate` and `ml_walk_forward_tune`; relocate `_prepare_xy` / `_xgb_estimator_factory` out of `cli.py` into a neutral `ml/pipeline.py`.
+3. **Indicator semantics cleanup** — RSI Wilder vs SMA decision, Hurst docstring vs implementation reconciliation, Ehlers IIR NaN propagation guard.
+4. **UI / reporting polish** — SHAP commentary narratives, walk-forward analytics depth, safer Streamlit error handling (`subprocess.run` timeouts, narrower `except`).
+
+Sprint-granular task lists live in `PROJECT_STATE.md`; the audit's unfixed architectural concerns are enumerated in `PROJECT_STATE.md` §4 "Warning zone" (seeded from `AUDIT_FINDINGS.md`).
 
 ---
 
@@ -236,14 +220,18 @@ AprilAlgo/
 │   └── generate_report.py          # Export backtest report
 │
 ├── docs/                           # === DOCUMENTATION ===
-│   ├── AGENTS.md                   # AI agent coding rules
-│   ├── CHANGELOG.md                # Version history
-│   ├── CLAUDE.md                   # AI context file
-│   ├── HANDOFF.md                  # Non-technical project summary
-│   ├── LEARNING.md                 # Beginner-friendly explanations
-│   ├── REPO_ANALYSIS.md            # External repo research
-│   └── ARCHITECTURE.md             # This file
+│   ├── DATA_SCHEMA.md              # Column / layer contracts (load-bearing)
+│   ├── TRIPLE_BARRIER_MATH.md      # Labeling math reference
+│   ├── HANDOFF.md                  # Project-bootstrap narrative
+│   └── archive/                    # Historical references
+│       ├── LEARNING.md             # Beginner Git/uv/packaging tutorial
+│       └── REPO_ANALYSIS.md        # External repo research (March 2026)
 │
+├── AGENTS.md                       # AI agent guide (canonical rules + commands + testing + model routing)
+├── CLAUDE.md                       # Thin pointer → AGENTS.md + Claude-only preferences
+├── PROJECT_STATE.md                # Live session handoff + next sprint + warning zone
+├── CHANGELOG.md                    # Semver release history
+├── ARCHITECTURE.md                 # This file
 └── LICENSE                         # Apache 2.0
 ```
 

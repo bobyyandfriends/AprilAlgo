@@ -38,6 +38,7 @@ class RsiSmaStrategy(BaseStrategy):
         df = rsi(price_data, period=self.rsi_period)
         df = sma(df, period=self.sma_period)
         self._data = df
+        self._backtest_bars_df = df
 
     def on_bar(self, idx: int, row: pd.Series, portfolio: Portfolio) -> None:
         enriched = self._data.iloc[idx]

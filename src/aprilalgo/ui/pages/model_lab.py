@@ -10,6 +10,11 @@ import streamlit as st
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
+# Avoid pinning the Streamlit worker thread to a hung child CLI process. One
+# hour is generous enough for purged-CV evaluation on daily bars while still
+# guaranteeing eventual release of the UI if something deadlocks.
+_CLI_TIMEOUT_SECONDS = 60 * 60
+
 
 def render() -> None:
     st.title("ML lab")
@@ -40,10 +45,16 @@ def _run(args: list[str]) -> None:
             capture_output=True,
             text=True,
             check=False,
+            timeout=_CLI_TIMEOUT_SECONDS,
         )
         st.code(proc.stdout or "(no stdout)", language="text")
         if proc.stderr:
             st.code(proc.stderr, language="text")
         st.caption(f"exit {proc.returncode}")
-    except Exception as e:
+    except subprocess.TimeoutExpired as e:
+        st.error(
+            f"CLI timed out after {_CLI_TIMEOUT_SECONDS}s; check for hangs or "
+            f"increase the UI timeout. Partial stdout:\n{e.stdout or ''}"
+        )
+    except (OSError, ValueError) as e:
         st.error(str(e))

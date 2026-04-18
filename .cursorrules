@@ -1,31 +1,31 @@
-# Model Routing Protocol (read first)
+# AprilAlgo — Cursor agent rules
+
+The single canonical rule file is **`AGENTS.md`** at the repo root. Read it first. What follows here is only a short reminder of the highest-stakes rules; if anything conflicts, `AGENTS.md` wins.
+
+## Model Routing Protocol (read first)
 
 Before writing or editing code for **any** new task—especially when picking work from a TODO list, sprint plan, or issue queue—do the following:
 
-1. **Always open and follow** `docs/MODEL_ROUTING.md`. It defines tiers (e.g. Fast / Standard / Heavy), which Cursor or subagent **model slug** to use per tier, and fallbacks. If that file is missing, say so once, default to **Standard** tier behavior, and suggest adding `MODEL_ROUTING.md` so routing stays explicit.
-2. **Pick the model for the task** using the criteria in `MODEL_ROUTING.md`, not habit. Examples of the *kind* of mapping (exact slugs live in that file only): reasoning-heavy or contract-setting work (complex ML/CV, label math, public APIs other modules import, no-lookahead strategy paths) → **Heavy** tier; routine feature implementation and tests against a fixed spec → **Standard** tier; docs, YAML, version bumps, and narrow mechanical edits → **Fast** tier. Do not use a Heavy-tier model for purely mechanical work, or a Fast-tier model for correctness-critical algorithm design.
-3. **Scope shift → stop and advise.** If the task evolves mid-session (e.g. from boilerplate or doc edits into non-trivial algorithms, new cross-module contracts, or leakage-sensitive ML)—**pause**, tell the user clearly that the scope crossed a tier boundary, and **recommend switching** to the tier and model named in `MODEL_ROUTING.md` for the new kind of work. Do not silently continue with an underpowered model on Heavy-tier problems.
+1. **Open and follow `AGENTS.md` §7 "Model routing (Cursor agents)".** It defines Fast / Standard / Heavy tiers, the Cursor or subagent model slug per tier, and fallbacks.
+2. **Pick the model for the task** using the criteria in that section, not habit. Reasoning-heavy or contract-setting work (complex ML/CV, label math, public APIs other modules import, no-lookahead strategy paths) → **Heavy** tier. Routine feature implementation and tests against a fixed spec → **Standard** tier. Docs, YAML, version bumps, and narrow mechanical edits → **Fast** tier. Do not use a Heavy-tier model for purely mechanical work, or a Fast-tier model for correctness-critical algorithm design.
+3. **Scope shift → stop and advise.** If the task evolves mid-session (e.g. from boilerplate or doc edits into non-trivial algorithms, new cross-module contracts, or leakage-sensitive ML) — **pause**, tell the user that the scope crossed a tier boundary, and **recommend switching** to the tier and model named in `AGENTS.md` §7 for the new kind of work. Do not silently continue with an underpowered model on Heavy-tier problems.
 
 ---
 
-# AprilAlgo — Cursor agent rules (v0.3 development)
+## Context discipline
 
-## Isolation (black-box modules)
+- **Before** writing code that touches columns or types, open **`docs/DATA_SCHEMA.md`** and align names and semantics.
+- **Before** starting a session, read **`PROJECT_STATE.md`** §2 "Today's handoff" and §4 "Warning zone" so you don't re-break fixes already shipped or duplicate debt already logged.
+- Prefer **narrow context**: attach **specific files** (e.g. one strategy module, `DATA_SCHEMA.md`) instead of broad whole-repo searches.
 
-- Do **not** read or reason from source files under `src/aprilalgo/indicators/` or `src/aprilalgo/backtest/` when working from **v0.1 / v0.2** context or when the task only needs integration contracts.
-- Treat those directories as **black boxes** that satisfy **`docs/DATA_SCHEMA.md`**. Use that file and public entrypoints (CLI, config, strategy APIs) instead of opening every `.py` file.
-
-## No look-ahead
+## No look-ahead (non-negotiable)
 
 - **Strictly enforce:** no future-dated bars or future information may influence feature generation, confluence, strategy actions, or label construction at decision time *t*.
 - Features at *t* use data ≤ *t*. Triple-barrier labels use price path **after** *t* only as defined by the barrier method, never mixing pre-label future into features.
 
-## API / token optimization
-
-- **Before** writing code that touches columns or types, open **`docs/DATA_SCHEMA.md`** and align names and semantics.
-- Prefer **narrow context**: attach **specific files** (e.g. one strategy module, `DATA_SCHEMA.md`) instead of broad whole-repo searches when possible.
-
 ## Documentation loop
 
-- After a task that changes behavior, conventions, or project direction, update **`CLAUDE.md`** (project context) and/or **`AGENTS.md`** (agent coding rules) so they stay accurate.
-- For schema or pipeline contracts, keep **`docs/DATA_SCHEMA.md`** in sync when the interface changes.
+- After a task that changes user-visible behavior, update **`CHANGELOG.md`** `[Unreleased]` in the same session.
+- After a task that changes AI conventions or project structure, update **`AGENTS.md`** (and `CLAUDE.md` if a Claude-specific preference changed).
+- For schema or pipeline contracts, keep **`docs/DATA_SCHEMA.md`** in sync when the interface changes — an uncompensated `meta.json` key change is a rule-13 violation per `AGENTS.md` §2.
+- Record the end-of-session handoff in **`PROJECT_STATE.md`** §2 using the template from `AGENTS.md` §8.2.

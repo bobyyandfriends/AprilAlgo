@@ -41,6 +41,14 @@ def pv_sequences(
     out = df.copy()
     n = len(out)
 
+    if n == 0:
+        out["pv_state"] = np.array([], dtype=int)
+        out["pv_state_name"] = []
+        out["pv_streak"] = np.array([], dtype=int)
+        out["pv_bull"] = np.array([], dtype=bool)
+        out["pv_bear"] = np.array([], dtype=bool)
+        return out
+
     price_up = (out["close"].values > np.roll(out["close"].values, 1))
     vol_up = (out["volume"].values > np.roll(out["volume"].values, 1))
     price_up[0] = False

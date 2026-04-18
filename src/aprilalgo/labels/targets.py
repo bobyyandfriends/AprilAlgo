@@ -59,6 +59,13 @@ def build_triple_barrier_targets(
     label_binary
         ``1`` if take-profit hit first, ``0`` otherwise (SL or vertical), ``NaN``
         where multiclass is NaN. Use for "hit upper barrier first" classification.
+
+        **Semantics (§AUDIT B11):** this is strictly *TP-vs-rest*; the negative
+        class collapses stop-loss and vertical-timeout into a single label. A
+        strategy thresholding ``P(class=1)`` therefore cannot distinguish
+        "neutral, uncertain" from "active downside". If directional context
+        matters (e.g. gating shorts), prefer ``label_multiclass`` and consume
+        the take-profit column of the resulting probability matrix.
     label_t0
         Integer **position** ``0..n-1`` of the decision bar (row index in *df*).
     label_t1

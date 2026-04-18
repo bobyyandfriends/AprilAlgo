@@ -34,7 +34,12 @@ class ModelBundle:
     meta: dict[str, Any]
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
-        """Return shape ``(n_samples, n_classes)`` probability matrix."""
+        """Return shape ``(n_samples, n_classes)`` probability matrix.
+
+        Binary columns are anchored on :attr:`classes_`: column ``i`` always
+        corresponds to ``classes_[i]``, even if a future ``meta.json`` persists
+        classes as ``[1.0, 0.0]`` instead of the conventional ``[0.0, 1.0]``.
+        """
         data = X[self.feature_names].to_numpy(dtype=np.float64, copy=False)
         dm = xgb.DMatrix(data, feature_names=self.feature_names)
         pred = np.asarray(self.booster.predict(dm))
@@ -42,7 +47,29 @@ class ModelBundle:
             if pred.ndim == 2 and pred.shape[1] == 2:
                 return pred
             p = pred.ravel()
-            return np.column_stack([1.0 - p, p])
+            classes = np.asarray(self.classes_, dtype=np.float64).ravel()
+            if classes.shape[0] < 2:
+                # Degenerate bundle (e.g. a per-regime slice where training
+                # data saw only one class). Preserve legacy behaviour: treat
+                # ``p`` as P(positive=1) and emit a canonical ``[P(0), P(1)]``
+                # matrix so downstream callers keep working.
+                out = np.empty((p.shape[0], 2), dtype=np.float64)
+                out[:, 0] = 1.0 - p
+                out[:, 1] = p
+                return out
+            if classes.shape[0] > 2:
+                raise ValueError(
+                    f"Binary bundle must expose <=2 classes, got {classes.tolist()}"
+                )
+            # Booster ``predict`` returns P(class=positive_label). Identify which
+            # column in ``classes_`` is the positive (larger) label and place the
+            # predicted probability there so column order always matches classes_.
+            pos_ix = int(np.argmax(classes))
+            neg_ix = 1 - pos_ix
+            out = np.empty((p.shape[0], 2), dtype=np.float64)
+            out[:, pos_ix] = p
+            out[:, neg_ix] = 1.0 - p
+            return out
         n = len(X)
         k = len(self.classes_)
         if pred.ndim == 1:
@@ -122,7 +149,29 @@ def save_model_bundle(
     if task == "multiclass":
         enc = getattr(clf, _APRIL_LABEL_CLASSES, None)
         if enc is None:
-            classes_list = [float(c) for c in np.asarray(clf.classes_).ravel()]
+            raw_classes = np.asarray(clf.classes_, dtype=np.float64).ravel()
+            # When :func:`train_xgb_classifier` is skipped and the sklearn wrapper
+            # was fit directly, ``clf.classes_`` for ``multi:softprob`` holds the
+            # encoded label space ``[0, 1, ..., k-1]`` rather than the original
+            # AprilAlgo labels ``{-1, 0, 1}``. Detect that exact shape and refuse
+            # to persist the bundle — the caller must set ``_aprilalgo_label_classes_``
+            # or use :func:`train_xgb_classifier` so inference returns the correct
+            # class axis.
+            k = raw_classes.shape[0]
+            looks_like_encoded = (
+                k >= 2
+                and np.array_equal(raw_classes, np.arange(k, dtype=np.float64))
+            )
+            if looks_like_encoded:
+                raise ValueError(
+                    "save_model_bundle multiclass fallback refused: clf.classes_ "
+                    f"== {raw_classes.tolist()} which looks like an encoded index "
+                    "space rather than the original labels (e.g. {-1, 0, 1}). "
+                    "Train via train_xgb_classifier() or set the "
+                    f"{_APRIL_LABEL_CLASSES!r} attribute on clf with the decoded "
+                    "labels before saving."
+                )
+            classes_list = [float(c) for c in raw_classes]
         else:
             classes_list = [float(c) for c in np.asarray(enc).ravel()]
     else:

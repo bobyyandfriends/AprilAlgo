@@ -30,6 +30,8 @@ DEFAULT_EXCLUDED_FROM_FEATURES: frozenset[str] = frozenset(
         "threshold",
         "source_rows",
         "dollar_value",
+        # From add_vol_regime — diagnostic only; vol_regime stays in the feature matrix
+        "realized_vol",
     }
 )
 
@@ -126,12 +128,17 @@ def align_features_and_labels(
 
     Rows with NaN labels (e.g. triple-barrier horizon too short) are removed.
     If ``dropna_features`` is True, rows with any NaN in *features* are also dropped.
+
+    Emits an ``INFO``-level log line summarising the row-count delta so long
+    warm-up periods (e.g. a 200-bar indicator on a 500-bar dataset silently
+    dropping 40% of rows) are visible in standard training output (§AUDIT B18).
     """
     if not features.index.equals(labels.index):
         common = features.index.intersection(labels.index)
         features = features.loc[common]
         labels = labels.loc[common]
 
+    n_before = len(features)
     combined = features.copy()
     combined[label_name] = labels
     combined = combined.dropna(subset=[label_name])
@@ -139,6 +146,20 @@ def align_features_and_labels(
         combined = combined.dropna()
     y = combined[label_name]
     X = combined.drop(columns=[label_name])
+    n_after = len(X)
+    if n_before > 0 and n_after != n_before:
+        import logging
+
+        dropped = n_before - n_after
+        pct = 100.0 * dropped / max(n_before, 1)
+        logging.getLogger(__name__).info(
+            "align_features_and_labels: dropped %d of %d rows (%.1f%%) due to "
+            "NaN in labels%s — typical for long-window indicator warm-ups.",
+            dropped,
+            n_before,
+            pct,
+            " or features" if dropna_features else "",
+        )
     return X, y
 
 

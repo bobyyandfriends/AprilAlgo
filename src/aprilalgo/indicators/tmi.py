@@ -28,6 +28,13 @@ def tmi(
     prices = out[column].values.astype(float)
     n = len(prices)
 
+    if n == 0:
+        col_name = f"tmi_{period}"
+        out[col_name] = np.array([], dtype=float)
+        out[f"tmi_{period}_bull"] = np.array([], dtype=bool)
+        out[f"tmi_{period}_bear"] = np.array([], dtype=bool)
+        return out
+
     smoothed = pd.Series(prices).rolling(window=smooth, min_periods=1).mean().values
 
     roc = np.zeros(n)

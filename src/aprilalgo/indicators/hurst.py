@@ -65,13 +65,20 @@ def hurst(
     """Add Hurst exponent columns and bull/bear signals to *df*.
 
     Columns added (for each window w):
-    - ``hurst_{w}`` — rolling Hurst exponent
-    - ``hurst_bull`` — True when majority of windows show trending (H > threshold)
-    - ``hurst_bear`` — True when majority of windows show mean-reverting (H < threshold)
 
-    The bull/bear interpretation:
-    - Trending markets (H > 0.55) reinforce the current direction → BULL if price rising
-    - Mean-reverting markets (H < 0.45) suggest reversal → useful context for both sides
+    - ``hurst_{w}`` — rolling Hurst exponent
+    - ``hurst_bull`` — True when a majority of windows are trending (H > ``trend_threshold``)
+      **and** the last close is higher than the previous close (strong uptrend).
+    - ``hurst_bear`` — True when a majority of windows are trending (H > ``trend_threshold``)
+      **and** the last close is lower than the previous close (strong downtrend).
+    - ``hurst_mean_revert`` — True when a majority of windows have H < ``revert_threshold``
+      (useful standalone context for both sides; does **not** drive bull / bear directly).
+
+    The bull/bear interpretation is deliberately asymmetric with the
+    mean-revert signal: trending markets reinforce the current direction, so
+    we gate bull / bear on both the Hurst verdict *and* the last-bar price
+    direction; mean-reversion is exposed as an independent flag rather than
+    folded into bear (§AUDIT B16).
     """
     if windows is None:
         windows = [50, 100, 200]

@@ -1,0 +1,10 @@
+# Smoke backtest: TEST fixture under tests/fixtures (repo root). Merged with config defaults.
+symbol: TEST
+timeframe: daily
+data_dir: tests/fixtures
+strategy: rsi_sma
+strategy_params:
+  rsi_period: 14
+  sma_period: 20
+  rsi_buy: 30
+  rsi_sell: 70

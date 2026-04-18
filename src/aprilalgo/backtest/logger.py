@@ -30,6 +30,7 @@ FULL_SIGNAL_EVENT_KEYS: frozenset[str] = frozenset(
         "label_multiclass",
         "label_binary",
         "meta_pred",
+        "pred_proba_meta",
         "outcome",
         "pnl",
     }
@@ -51,9 +52,30 @@ def validate_event(
 
 
 def hash_features_row(row: pd.DataFrame) -> str:
-    """Stable short hash for one feature row (first row of *row*)."""
-    vals = row.iloc[0].to_numpy(dtype=np.float64, copy=False)
-    payload = vals.tobytes()
+    """Stable short hash for one feature row (first row of *row*).
+
+    Hardened against two real-world failure modes seen in the UI/backtest:
+
+    * Empty frames (``row`` has zero rows) — previously raised ``IndexError``
+      on ``row.iloc[0]``. We now return a sentinel so callers can still log
+      the event without crashing.
+    * Non-numeric / mixed-dtype frames (e.g. a string ``regime`` column, or
+      datetimes that leaked into the feature matrix) — ``to_numpy(float64)``
+      would raise ``TypeError``. We coerce with ``pd.to_numeric`` first and
+      fall back to the string representation if coercion still fails, so the
+      hash stays stable for a given row shape.
+    """
+    if row is None or getattr(row, "empty", True) or len(row) == 0:
+        return "empty"
+
+    series = row.iloc[0]
+    try:
+        coerced = pd.to_numeric(series, errors="coerce")
+        vals = np.ascontiguousarray(coerced.to_numpy(dtype=np.float64, copy=False))
+        payload = vals.tobytes()
+    except (TypeError, ValueError):
+        # Last-ditch fallback: use the repr of each cell joined with NULs.
+        payload = "\x00".join(repr(v) for v in series.tolist()).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()[:16]
 
 

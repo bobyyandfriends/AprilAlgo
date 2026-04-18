@@ -96,7 +96,7 @@ Other metrics (profit factor, total return, etc.) may appear in the same result 
 
 Each line is one JSON object. **Minimal keys:** ``ts``, ``symbol`` (see :func:`~aprilalgo.backtest.logger.validate_event`).
 
-**Full contract** (all keys present; use ``null`` when unknown at log time): ``ts``, ``symbol``, ``tf``, ``model_id``, ``features_hash``, ``pred``, ``pred_proba`` (list aligned with model classes), ``label_multiclass``, ``label_binary``, ``meta_pred``, ``outcome``, ``pnl``. Strategies may also include legacy fields such as ``bar_index``, ``pred_proba_tp``, ``event``.
+**Full contract** (all keys present; use ``null`` when unknown at log time): ``ts``, ``symbol``, ``tf``, ``model_id``, ``features_hash``, ``pred``, ``pred_proba`` (list aligned with model classes), ``label_multiclass``, ``label_binary``, ``meta_pred``, ``pred_proba_meta`` (``null`` when the ``ml_xgboost`` meta gate is off; otherwise ``float`` in ``[0, 1]`` — probability that the primary prediction is **correct** per the stacked meta logit, same target as ``meta_logit.json``), ``outcome``, ``pnl``. Strategies may also include legacy fields such as ``bar_index``, ``pred_proba_tp``, ``event``.
 
 Use :class:`~aprilalgo.backtest.logger.SignalJsonlLogger` and :func:`~aprilalgo.backtest.logger.log_event`.
 
@@ -159,7 +159,7 @@ CLI usage: ``python -m aprilalgo.cli bars --input ... --bar-type volume --thresh
 
 **Role:** Record how row-level ``sample_weight`` was chosen during training and document the YAML contract for reproducibility.
 
-### YAML: top-level ``sampling`` (optional)
+### 11.1 YAML: top-level ``sampling`` (optional)
 
 When the key is **absent**, training uses **uniform** row weights (same as ``strategy: none``).
 
@@ -175,7 +175,7 @@ When the key is **absent**, training uses **uniform** row weights (same as ``str
 - **``uniqueness``:** ``sample_weight[i]`` = :func:`~aprilalgo.ml.sampling.uniqueness_weights` from triple-barrier ``label_t0`` / ``label_t1`` (overlap-aware; weights sum to ``n``).
 - **``bootstrap``:** one draw of ``n_draw`` indices via :func:`~aprilalgo.ml.sampling.sequential_bootstrap_sample`; each row’s weight is its **multiplicity** in that draw, **normalized** so weights sum to ``n`` (zeros allowed for rows never drawn).
 
-### ``meta.json`` key ``sampling`` (object, written on every ``train`` in v0.5+)
+### 11.2 ``meta.json`` key ``sampling`` (object, written on every ``train`` in v0.5+)
 
 | Field | Type | When present |
 |-------|------|----------------|
@@ -206,7 +206,112 @@ When the key is **absent**, training uses **uniform** row weights (same as ``str
 
 **Dependencies:** Built with the same optional ``sampling`` weights as ``train`` when ``sampling`` is set in YAML.
 
-**Optional dependency (HMM regimes):** ``add_vol_regime(..., use_hmm=True)`` requires ``hmmlearn``, declared as the project extra ``hmm`` (``uv sync --extra hmm`` / ``pip install aprilalgo[hmm]``). Wheels exist for common CPython versions; source builds need a C toolchain.
+---
+
+## 13. Meta-label bundle (v0.5 Sprint 4)
+
+**Role:** Secondary logistic predicts whether the **primary** model’s OOF prediction matched ``y`` (meta target ``z``). Used for gating in Sprint 5+.
+
+**Pipeline:** ``train`` → ``oof`` → ``meta-train`` (CLI). ``meta-train`` reads ``oof_primary.csv`` (must align row-for-row with :func:`~aprilalgo.cli._prepare_xy` for the same config + symbol).
+
+**Degenerate case:** if primary OOF matches ``y`` on every row (or never), meta labels ``z`` are a single class and :func:`~aprilalgo.labels.meta_label.fit_meta_logit_purged` raises ``ValueError`` — regenerate OOF or use a non-trivial primary model.
+
+**Artifacts under ``model.out_dir``:**
+
+| File | Notes |
+|------|--------|
+| ``meta_logit.json`` | JSON: ``feature_names`` (includes trailing ``primary_pred``), ``coef``, ``intercept``, ``classes_`` — load via :func:`~aprilalgo.ml.meta_bundle.load_meta_logit_bundle` |
+| ``meta_oof.csv`` | Purged meta-model OOF prob of ``z=1``: columns ``row_idx``, ``y_true``, ``z``, ``meta_oof_proba`` |
+
+**``meta.json`` key ``meta_logit`` (after ``meta-train``):**
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `enabled` | bool | ``true`` when bundle was written |
+| `path` | str | Relative path, e.g. ``meta_logit.json`` |
+| `threshold` | float | Default ``0.5``; override with YAML ``meta_label.threshold`` |
+
+**YAML (optional) ``meta_label`` block:** ``n_splits``, ``embargo`` (default to top-level ``cv``), ``threshold`` for persistence in ``meta.json``.
+
+**Compatibility:** Bundles without ``meta_logit`` treat meta-gate as disabled (Sprint 5).
+
+---
+
+## 14. Regime conditioning in the ML pipeline (v0.5 Sprint 6)
+
+**Role:** Optional **volatility regime** columns are added to the OHLCV frame **before** indicator features are built, so ``vol_regime`` can enter the XGBoost feature matrix while ``realized_vol`` stays a diagnostic-only column (excluded from ``X`` by default).
+
+### YAML: top-level ``regime`` (optional)
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `enabled` | bool | When ``true``, :func:`~aprilalgo.meta.regime.add_vol_regime` runs on the loaded bar frame immediately after optional information bars and **before** triple-barrier labels and ``build_feature_matrix`` |
+| `window` | int | Rolling window for realized vol (default ``20``) |
+| `n_buckets` | int | Quantile buckets for rule-based regimes (default ``3``) |
+| `use_hmm` | bool | If ``true``, HMM path (requires ``hmmlearn``); default ``false`` |
+
+### ``meta.json`` key ``regime`` (object, written on every ``train`` in v0.5+)
+
+Mirrors the resolved YAML (or defaults when the block is absent): ``enabled``, ``window``, ``n_buckets``, ``use_hmm``.
+
+**Inference:** ``predict`` and ``shap`` call :func:`~aprilalgo.cli._cfg_for_inference`, which merges ``meta.regime`` from the bundle over the YAML so the **same window and bucket count** are used even if the local config drifts.
+
+**Backtests:** ``ml_xgboost`` applies :func:`~aprilalgo.meta.regime.add_vol_regime` to ``work`` after optional information bars when ``bundle.meta.regime.enabled`` is true, then runs the indicator pipeline — matching train order.
+
+**Feature matrix:** ``vol_regime`` is a normal numeric feature column; ``realized_vol`` is listed in :data:`~aprilalgo.ml.features.DEFAULT_EXCLUDED_FROM_FEATURES` and is not part of ``X``.
+
+**Compatibility:** Bundles without a ``regime`` key are treated as ``{"enabled": false, ...}``; training without the YAML block matches the pre–Sprint 6 feature matrix.
+
+---
+
+## 15. Per-regime model routing (v0.5 Sprint 7)
+
+**Role:** When ``regime.enabled`` and ``regime.groupby: true``, ``train`` fits **one XGBoost bundle per ``vol_regime`` bucket** instead of a single combined model. Inference routes each row to the bundle trained on that bucket (with undefined ``vol_regime`` mapped to the **default** bucket).
+
+### Artifacts under ``model.out_dir``
+
+| File / directory | Notes |
+|------------------|--------|
+| ``regime_index.json`` | JSON: ``buckets`` maps string bucket id ``"0"``, ``"1"``, … → subdirectory name ``regime_<k>``; ``default`` is one of those subdirectory names (the smallest trained bucket id) |
+| ``regime_<k>/`` | Full model bundle (``meta.json`` + ``xgboost.json``); ``meta.json`` includes ``regime.bucket`` (int) and ``regime.groupby: true`` |
+
+### Training semantics
+
+- Rows with NaN ``vol_regime`` are included when training the **smallest** observed bucket id (same default used at inference for NaN rows).
+- Buckets with too few rows or a single-class ``y`` (binary) are skipped.
+- All successful sub-bundles must share **identical** ``feature_names`` (same ``X`` columns).
+
+### CLI / strategy
+
+- ``predict`` reads ``regime_index.json`` if present; builds ``X`` once, then batches predictions per bucket. CSV ``proba_<c>`` columns use the **sorted union** of ``classes_`` across buckets; for **binary** tasks, two-column ``predict_proba`` rows are mapped to canonical classes ``0.0`` and ``1.0`` even when a bucket’s saved ``classes_`` lists only one label.
+- ``shap`` uses the **default** sub-bundle from ``regime_index.json`` when the index exists, unless ``shap --per-regime`` is used (see §16).
+- ``ml_xgboost`` loads every sub-bundle at ``init`` and selects the bundle per bar from ``vol_regime`` on the feature row.
+
+**Compatibility:** Absent ``regime_index.json``, behavior matches a single-bundle layout (Sprint 6 and earlier).
+
+---
+
+## 16. Per-regime SHAP artifacts (v0.5 Sprint 10)
+
+**Role:** When ``regime_index.json`` exists, optional **per-bucket** SHAP tables align each explanation with the bundle actually used for rows in that ``vol_regime`` bucket.
+
+### CLI
+
+| Invocation | Output (under ``model.out_dir``) |
+|------------|----------------------------------|
+| ``python -m aprilalgo.cli shap --config …`` (default) | Single ``shap_values.csv`` / ``shap_importance.csv`` paths from flags, using the **default** sub-bundle only (unchanged from §15). |
+| ``python -m aprilalgo.cli shap --config … --per-regime`` | For each bucket *k* with at least one routed row: ``regime_<k>_shap_values.csv`` and ``regime_<k>_shap_importance.csv`` (same column contracts as global SHAP tables in §8). |
+
+**Requirements:** Feature matrix must include ``vol_regime`` (same routing rules as ``predict``). Buckets with no rows in the current config slice are skipped.
+
+### Library
+
+- :func:`~aprilalgo.ml.explain.shap_values_per_regime` accepts a ``dict`` of :class:`~aprilalgo.ml.trainer.ModelBundle` per bucket id and a matching ``dict`` of feature :class:`~pandas.DataFrame` slices.
+- :func:`~aprilalgo.ml.explain.load_regime_bundles_shap` loads all sub-bundles listed in ``regime_index.json``.
+
+### Reporting
+
+- HTML section ``section-wf-tuner`` summarizes ``wf_tune_results.csv``; regime **bucket counts** and **per-regime accuracy** use ``section-regime`` in :mod:`aprilalgo.reporting.report` (distinct from the legacy backtest ``section-regime-timeline`` block).
 
 ---
 

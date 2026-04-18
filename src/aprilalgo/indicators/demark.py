@@ -52,11 +52,15 @@ def demark(df: pd.DataFrame, lookback: int = 4) -> pd.DataFrame:
         else:
             sell_setup[i] = 0
 
-        # Activate countdown on completed setup (count == 9)
-        if buy_setup[i] == 9:
+        # Activate countdown only on the completion transition (prev<9 → now=9),
+        # otherwise a sustained run where setup remains capped at 9 would keep
+        # resetting the countdown counter on every bar.
+        buy_setup_completed = buy_setup[i] == 9 and buy_setup[i - 1] < 9
+        sell_setup_completed = sell_setup[i] == 9 and sell_setup[i - 1] < 9
+        if buy_setup_completed and not buy_cd_active:
             buy_cd_active = True
             buy_cd_count = 0
-        if sell_setup[i] == 9:
+        if sell_setup_completed and not sell_cd_active:
             sell_cd_active = True
             sell_cd_count = 0
 
@@ -80,11 +84,12 @@ def demark(df: pd.DataFrame, lookback: int = 4) -> pd.DataFrame:
                 sell_cd_active = False
                 sell_cd_count = 0
 
-        # A completed 9-count setup (without needing full countdown)
-        # is also a weaker signal
-        if buy_setup[i] == 9 and not td_bull[i]:
+        # Fire the weaker "completed-setup" signal only on the transition bar so
+        # downstream consumers see a discrete event, not a standing flag for
+        # every bar the setup stays capped at 9.
+        if buy_setup_completed and not td_bull[i]:
             td_bull[i] = True
-        if sell_setup[i] == 9 and not td_bear[i]:
+        if sell_setup_completed and not td_bear[i]:
             td_bear[i] = True
 
     out["td_buy_setup"] = buy_setup

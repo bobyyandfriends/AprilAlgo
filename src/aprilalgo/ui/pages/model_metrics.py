@@ -13,8 +13,8 @@ import streamlit as st
 import yaml
 from xgboost import XGBClassifier
 
-from aprilalgo.cli import _prepare_xy
 from aprilalgo.ml.evaluator import purged_cv_evaluate
+from aprilalgo.ml.pipeline import prepare_xy as _prepare_xy
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
@@ -89,8 +89,15 @@ def render() -> None:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-        # Binary ROC curve on in-sample predictions (visual quick check).
+        # Binary ROC curve + proxy equity curve. Both are IN-SAMPLE (the model is
+        # fit and scored on the same rows). They are visual quick-looks only and
+        # must not be treated as out-of-sample performance — CV metrics above are
+        # the ground truth for that.
         if task == "binary":
+            st.caption(
+                ":warning: ROC + proxy equity below are in-sample on the training "
+                "rows; refer to the purged-CV metrics above for held-out performance."
+            )
             clf = factory()
             clf.fit(X, y)
             prob = clf.predict_proba(X)[:, 1]
@@ -99,23 +106,29 @@ def render() -> None:
             st.subheader("ROC (in-sample quick view)")
             st.line_chart(roc_df.set_index("fpr"))
 
-        # Optional feature importance/equity previews from latest CLI outputs.
+            pred = clf.predict(X)
+            pnl = np.where(pred == y.to_numpy(), 1.0, -1.0)
+            eq = pd.Series(pnl).cumsum()
+            st.subheader("Proxy equity curve (in-sample classification correctness)")
+            st.line_chart(eq)
+
+        # Optional feature importance preview from latest CLI outputs. Guard
+        # against unexpected CSV schemas so a bad file doesn't blow up the page.
         out_dir = _PROJECT_ROOT / cfg.get("model", {}).get("out_dir", "outputs/ml")
         gain_csv = out_dir / "importance_gain.csv"
         if gain_csv.is_file():
-            imp = pd.read_csv(gain_csv).head(20)
-            st.subheader("Feature importance (latest gain CSV)")
-            st.bar_chart(imp.set_index("feature")["score"])
-
-        if task == "binary":
-            clf = factory()
-            clf.fit(X, y)
-            pred = clf.predict(X)
-            # Tiny proxy equity curve: +1 for correct prediction, -1 otherwise.
-            pnl = np.where(pred == y.to_numpy(), 1.0, -1.0)
-            eq = pd.Series(pnl).cumsum()
-            st.subheader("Proxy equity curve (classification correctness)")
-            st.line_chart(eq)
+            try:
+                imp = pd.read_csv(gain_csv).head(20)
+                if {"feature", "score"}.issubset(imp.columns):
+                    st.subheader("Feature importance (latest gain CSV)")
+                    st.bar_chart(imp.set_index("feature")["score"])
+                else:
+                    st.warning(
+                        f"importance_gain.csv exists but is missing required columns "
+                        f"(found: {list(imp.columns)})"
+                    )
+            except Exception as exc:  # pragma: no cover - UI best-effort
+                st.warning(f"Could not read importance_gain.csv: {exc}")
 
         st.download_button(
             "Download JSON",

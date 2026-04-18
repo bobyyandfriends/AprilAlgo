@@ -28,15 +28,36 @@ class PurgedKFold:
     indices are all remaining samples that (1) do not overlap any test sample's
     ``[t0, t1]`` label window, and (2) do not start in the embargo zone after the
     test block's latest ``t1``.
+
+    Parameters
+    ----------
+    n_splits
+        Number of folds (``>= 2``).
+    embargo
+        One-sided embargo distance applied *after* each test block (drops training
+        rows whose ``t0`` falls in ``(max_t1_test, max_t1_test + embargo]``).
+    symmetric_embargo
+        When ``True`` the embargo is also applied *before* the test block, dropping
+        training rows whose ``t1`` falls in ``[min_t0_test - embargo, min_t0_test)``.
+        This matches AFML §7's symmetric embargo prescription (covers feature-level
+        serial correlation that leaks *into* the test block). Defaults to ``False``
+        for backward compatibility — existing tuner results remain reproducible.
     """
 
-    def __init__(self, n_splits: int = 5, embargo: int = 0) -> None:
+    def __init__(
+        self,
+        n_splits: int = 5,
+        embargo: int = 0,
+        *,
+        symmetric_embargo: bool = False,
+    ) -> None:
         if n_splits < 2:
             raise ValueError("n_splits must be >= 2")
         if embargo < 0:
             raise ValueError("embargo must be >= 0")
         self.n_splits = n_splits
         self.embargo = embargo
+        self.symmetric_embargo = symmetric_embargo
 
     def get_n_splits(
         self,
@@ -98,7 +119,14 @@ class PurgedKFold:
                 continue
             train_cand = np.setdiff1d(np.arange(n, dtype=np.int64), test_idx)
             train_idx = _purge_train(train_cand, test_idx, t0_i, t1_i)
-            train_idx = _embargo_train(train_idx, test_idx, t0_i, t1_i, self.embargo)
+            train_idx = _embargo_train(
+                train_idx,
+                test_idx,
+                t0_i,
+                t1_i,
+                self.embargo,
+                symmetric=self.symmetric_embargo,
+            )
             yield train_idx, test_idx
 
 
@@ -108,16 +136,63 @@ def _purge_train(
     t0: np.ndarray,
     t1: np.ndarray,
 ) -> np.ndarray:
-    keep: list[int] = []
-    for j in train_cand:
-        purge = False
-        for k in test_idx:
-            if _intervals_overlap(int(t0[j]), int(t1[j]), int(t0[k]), int(t1[k])):
-                purge = True
-                break
-        if not purge:
-            keep.append(int(j))
-    return np.array(keep, dtype=np.int64)
+    """Drop candidate training rows whose ``[t0,t1]`` overlaps any test row's interval.
+
+    Vectorised O(|test| + |train|) implementation: a training row ``j`` is kept iff
+    its window ``[t0[j], t1[j]]`` does **not** intersect the union of the test-row
+    intervals, which is itself a union of closed intervals. Rather than build the
+    union explicitly (which can be sparse), we note that test rows' ``[t0,t1]`` form
+    contiguous runs when sorted; checking overlap against ``[min_t0_test, max_t1_test]``
+    handles the common single-run case in one pass, and we fall back to a merge-style
+    scan for the (rare) multi-run case.
+    """
+    if train_cand.size == 0 or test_idx.size == 0:
+        return train_cand.astype(np.int64, copy=False)
+
+    te_t0 = t0[test_idx]
+    te_t1 = t1[test_idx]
+    # Sort test intervals by start so we can merge into disjoint runs.
+    order = np.argsort(te_t0, kind="stable")
+    te_t0 = te_t0[order]
+    te_t1 = te_t1[order]
+
+    # Merge overlapping/adjacent test intervals into disjoint runs.
+    # After this loop, ``runs`` holds the disjoint closed intervals covered by test.
+    run_starts: list[int] = [int(te_t0[0])]
+    run_ends: list[int] = [int(te_t1[0])]
+    for s, e in zip(te_t0[1:], te_t1[1:], strict=True):
+        s_i = int(s)
+        e_i = int(e)
+        if s_i <= run_ends[-1]:
+            if e_i > run_ends[-1]:
+                run_ends[-1] = e_i
+        else:
+            run_starts.append(s_i)
+            run_ends.append(e_i)
+
+    runs_start = np.asarray(run_starts, dtype=np.int64)
+    runs_end = np.asarray(run_ends, dtype=np.int64)
+
+    tr_t0 = t0[train_cand]
+    tr_t1 = t1[train_cand]
+
+    # For each training row, find the first run whose start > training row's t1 via
+    # binary search. The previous run (if any) is the only candidate that could
+    # overlap; check it directly. This is O(|train| log |runs|) which is effectively
+    # linear when |runs| is small (the common single-block test case).
+    # overlap iff some run has max(runs_start[k], tr_t0) <= min(runs_end[k], tr_t1).
+    pos = np.searchsorted(runs_start, tr_t1, side="right") - 1
+    overlap = np.zeros(train_cand.size, dtype=bool)
+    valid = pos >= 0
+    if valid.any():
+        picked_end = runs_end[np.maximum(pos, 0)]
+        picked_start = runs_start[np.maximum(pos, 0)]
+        lo = np.maximum(picked_start, tr_t0)
+        hi = np.minimum(picked_end, tr_t1)
+        overlap = valid & (lo <= hi)
+
+    keep_mask = ~overlap
+    return train_cand[keep_mask].astype(np.int64, copy=False)
 
 
 def _embargo_train(
@@ -126,18 +201,29 @@ def _embargo_train(
     t0: np.ndarray,
     t1: np.ndarray,
     embargo: int,
+    *,
+    symmetric: bool = False,
 ) -> np.ndarray:
+    """Drop training rows adjacent to the test block's time boundary.
+
+    Default (asymmetric) behaviour drops training rows whose ``t0`` lies in
+    ``(max_t1_test, max_t1_test + embargo]``. With ``symmetric=True`` we also drop
+    rows whose ``t1`` lies in ``[min_t0_test - embargo, min_t0_test)`` — this
+    matches AFML §7's symmetric embargo and covers feature-level serial
+    correlation leaking forward *into* the test block as well as backward out of it.
+    """
     if embargo == 0 or train_idx.size == 0:
         return train_idx
     max_t1_test = int(np.max(t1[test_idx]))
-    keep: list[int] = []
-    for j in train_idx:
-        t0j = int(t0[j])
-        # Drop training starts in (max_t1_test, max_t1_test + embargo]
-        if max_t1_test < t0j <= max_t1_test + embargo:
-            continue
-        keep.append(int(j))
-    return np.array(keep, dtype=np.int64)
+    t0_tr = t0[train_idx]
+    after_mask = (t0_tr > max_t1_test) & (t0_tr <= max_t1_test + embargo)
+    keep_mask = ~after_mask
+    if symmetric:
+        min_t0_test = int(np.min(t0[test_idx]))
+        t1_tr = t1[train_idx]
+        before_mask = (t1_tr >= min_t0_test - embargo) & (t1_tr < min_t0_test)
+        keep_mask &= ~before_mask
+    return train_idx[keep_mask].astype(np.int64, copy=False)
 
 
 def learning_matrix(

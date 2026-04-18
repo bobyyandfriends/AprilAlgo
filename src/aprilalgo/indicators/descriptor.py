@@ -55,6 +55,11 @@ class IndicatorSpec:
         return {p.name: p.default for p in self.params}
 
 
+def _identity(df: pd.DataFrame, **_: Any) -> pd.DataFrame:
+    """No-op pipeline step used by UI-only pseudo-indicators (ML / SHAP overlays)."""
+    return df
+
+
 def _build_catalog() -> dict[str, IndicatorSpec]:
     """Build the indicator catalog. Imports are inside the function to avoid cycles."""
     from aprilalgo.indicators.rsi import rsi
@@ -151,6 +156,25 @@ def _build_catalog() -> dict[str, IndicatorSpec]:
             params=[ParamSpec("streak_threshold", "Streak", 3, 2, 7, 1)],
             category="pattern", overlay=False,
             description="Price-Volume state transitions",
+        ),
+        # --- UI-only pseudo-indicators (consumed by the charts page) ---
+        "demark_counts": IndicatorSpec(
+            name="demark_counts", display_name="DeMark Counts", fn=_identity,
+            params=[ParamSpec("min_count", "Min count", 4, 1, 13, 1)],
+            category="exhaustion", overlay=True,
+            description="TD Sequential Setup / Countdown integer labels",
+        ),
+        "ml_proba": IndicatorSpec(
+            name="ml_proba", display_name="ML Probability", fn=_identity,
+            params=[ParamSpec("threshold", "Threshold", 0.55, 0.5, 0.95, 0.05)],
+            category="ml", overlay=False,
+            description="XGBoost out-of-fold class-1 probability",
+        ),
+        "shap_local": IndicatorSpec(
+            name="shap_local", display_name="SHAP Contributions", fn=_identity,
+            params=[ParamSpec("top_k", "Top-K features", 5, 3, 15, 1)],
+            category="ml", overlay=False,
+            description="Signed stacked SHAP contributions per bar (top-K globally)",
         ),
     }
 

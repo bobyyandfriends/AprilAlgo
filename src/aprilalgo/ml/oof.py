@@ -47,10 +47,18 @@ def compute_primary_oof(
     if sw is not None and sw.shape[0] != n:
         raise ValueError("sample_weight must have length len(X)")
 
+    # Determine the GLOBAL class universe up-front from ``y``. An individual fold's
+    # training set may miss a class (imbalanced folds, rare labels), which would
+    # either (a) reshape ``est.classes_`` between folds and crash the OOF matrix
+    # assignment, or (b) silently shift the column → class mapping. By fixing the
+    # global axis here and mapping each fold's ``est.classes_`` onto it, every OOF
+    # column always refers to the same class label across folds.
+    global_classes = np.unique(y_arr[~pd.isna(y_arr)] if y_arr.dtype.kind == "f" else y_arr)
+    global_classes = np.asarray(global_classes, dtype=np.float64).ravel()
+
     pkf = PurgedKFold(n_splits=n_splits, embargo=embargo)
     oof_pred = np.full(n, np.nan, dtype=np.float64)
-    oof_proba: np.ndarray | None = None
-    classes_: np.ndarray | None = None
+    oof_proba = np.full((n, len(global_classes)), np.nan, dtype=np.float64)
 
     for train_idx, test_idx in pkf.split(X, y=y_arr, sample_t0=t0a, sample_t1=t1a):
         if train_idx.size == 0 or test_idx.size == 0:
@@ -65,16 +73,22 @@ def compute_primary_oof(
             est.fit(X_tr, y_tr)
         pred = est.predict(X_te)
         proba = est.predict_proba(X_te)
-        if oof_proba is None:
-            classes_ = np.asarray(est.classes_, dtype=np.float64).ravel()
-            oof_proba = np.full((n, proba.shape[1]), np.nan, dtype=np.float64)
-        oof_pred[test_idx] = pred.astype(np.float64, copy=False)
-        oof_proba[test_idx] = proba.astype(np.float64, copy=False)
 
-    if oof_proba is None or classes_ is None:
-        raise ValueError(
-            "No OOF predictions were produced (empty folds or PurgedKFold yielded no splits)"
+        fold_classes = np.asarray(est.classes_, dtype=np.float64).ravel()
+        # Map this fold's class axis to the global axis; classes missing from the
+        # fold's training set remain NaN in the OOF matrix for those test rows.
+        col_map = {float(c): j for j, c in enumerate(fold_classes)}
+        mapped = np.full(
+            (test_idx.size, len(global_classes)), np.nan, dtype=np.float64
         )
+        for g_idx, cls in enumerate(global_classes):
+            j = col_map.get(float(cls))
+            if j is not None:
+                mapped[:, g_idx] = proba[:, j]
+        oof_pred[test_idx] = pred.astype(np.float64, copy=False)
+        oof_proba[test_idx] = mapped
+
+    classes_ = global_classes
 
     out = pd.DataFrame(
         {

@@ -21,22 +21,36 @@ def walk_forward_splits(
 ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
     """Yield ``(train_idx, test_idx)`` integer position arrays.
 
-    *test_size* defaults to ``max(1, (n - min_train) // n_folds)``.
+    When *test_size* is ``None`` it is computed as
+    ``ceil((n - min_train) / n_folds)`` so the iterator emits exactly
+    *n_folds* splits that together tile ``[min_train, n)``. Previously the
+    floor-based default could emit ``n_folds + 1`` windows when
+    ``(n - min_train)`` was not divisible by ``n_folds`` (§AUDIT B9).
+
+    When an explicit *test_size* is supplied, we preserve the legacy
+    "cover-the-tail" behaviour: every window that fits in ``[min_train, n)``
+    is yielded (caller is responsible if they want exactly *n_folds*).
     """
     if n_folds < 1:
         raise ValueError("n_folds must be >= 1")
     if min_train >= n:
         raise ValueError("min_train must be < n")
-    if test_size is None:
-        test_size = max(1, (n - min_train) // n_folds)
+    auto_sized = test_size is None
+    if auto_sized:
+        # Ceiling division so *n_folds* auto-sized windows cover the tail.
+        test_size = max(1, -(-(n - min_train) // n_folds))
     start_test = min_train
+    emitted = 0
     while start_test < n:
+        if auto_sized and emitted >= n_folds:
+            break
         end_test = min(start_test + test_size, n)
         train_idx = np.arange(0, start_test, dtype=np.int64)
         test_idx = np.arange(start_test, end_test, dtype=np.int64)
         if test_idx.size == 0:
             break
         yield train_idx, test_idx
+        emitted += 1
         start_test = end_test
 
 

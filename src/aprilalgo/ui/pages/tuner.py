@@ -180,7 +180,7 @@ def render() -> None:
             x=x_param, y=y_param, color=optimize_metric,
             size=results_df[optimize_metric].clip(lower=0).fillna(0) + 0.01,
             color_continuous_scale="RdYlGn",
-            hover_data=list(METRIC_DISPLAY_NAMES.keys()),
+            hover_data=[c for c in METRIC_DISPLAY_NAMES if c in results_df.columns],
             template="plotly_dark", height=450,
         )
         fig.update_layout(margin=dict(l=60, r=30, t=20, b=30))

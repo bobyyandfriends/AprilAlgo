@@ -3,6 +3,8 @@
 > **Generated:** March 29, 2026  
 > **Purpose:** Catalog which GitHub repos have useful components for AprilAlgo, what to use, and when to use it in the roadmap.
 
+**Historical note (2026-04-17):** The “When to use” column still names milestones such as **v0.2** / **v0.3** from the original import plan. As of AprilAlgo **0.5.0**, Massive/shap and most ML pieces are **integrated**; read those cells as a **historical** roadmap snapshot, not the live semver map (see `CHANGELOG.md`).
+
 ---
 
 ## Quick Reference Table

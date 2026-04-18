@@ -52,14 +52,36 @@ def render() -> None:
     bull_cols = [c for c in tail.columns if c.endswith("_bull")]
     bear_cols = [c for c in tail.columns if c.endswith("_bear")]
 
+    def _safe_int(val) -> int:
+        # Indicator warm-up rows propagate NaN into ``bull_count`` / ``bear_count``;
+        # ``.get(..., 0)`` only covers missing keys, not NaN values.
+        try:
+            if val is None or pd.isna(val):
+                return 0
+            return int(val)
+        except (TypeError, ValueError):
+            return 0
+
     for _, row in tail.iloc[::-1].iterrows():
         direction = row.get("confluence_direction", "NEUTRAL")
         net = row.get("confluence_net", 0.0)
         if pd.isna(net):
             continue
 
+        dt_val = row.get("datetime")
+        if pd.isna(dt_val):
+            continue
+        dt_str = pd.Timestamp(dt_val).strftime("%Y-%m-%d %H:%M")
+
         color = "#26a69a" if direction == "LONG" else "#ef5350" if direction == "SHORT" else "#78909c"
         arrow = "\u25b2" if direction == "LONG" else "\u25bc" if direction == "SHORT" else "\u25cf"
+
+        bull_n = _safe_int(row.get("bull_count", 0))
+        bull_t = _safe_int(row.get("bull_total", 0))
+        bear_n = _safe_int(row.get("bear_count", 0))
+        bear_t = _safe_int(row.get("bear_total", 0))
+        close_val = row.get("close", float("nan"))
+        close_str = f"${float(close_val):.2f}" if pd.notna(close_val) else "—"
 
         st.markdown(
             f"""<div style="border-left: 4px solid {color}; padding: 8px 14px; margin-bottom: 8px;
@@ -67,15 +89,15 @@ def render() -> None:
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:1.1em;"><b>{arrow} {direction}</b>
                 &nbsp; {symbol} &nbsp;
-                <span style="color:#aaa;">{pd.Timestamp(row['datetime']).strftime('%Y-%m-%d %H:%M')}</span></span>
+                <span style="color:#aaa;">{dt_str}</span></span>
                 <span style="font-size:1.3em; font-weight:bold; color:{color};">
                     Net: {net:+.2f}
                 </span>
             </div>
             <div style="color:#bbb; font-size:0.85em; margin-top:4px;">
-                Close: ${row['close']:.2f} &nbsp;|&nbsp;
-                Bull: {int(row.get('bull_count', 0))}/{int(row.get('bull_total', 0))} &nbsp;|&nbsp;
-                Bear: {int(row.get('bear_count', 0))}/{int(row.get('bear_total', 0))}
+                Close: {close_str} &nbsp;|&nbsp;
+                Bull: {bull_n}/{bull_t} &nbsp;|&nbsp;
+                Bear: {bear_n}/{bear_t}
             </div>
             </div>""",
             unsafe_allow_html=True,

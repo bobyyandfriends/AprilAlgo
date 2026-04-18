@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from aprilalgo.config import load_config
 from aprilalgo.data import load_price_data
@@ -44,7 +45,8 @@ def main(argv: list[str] | None = None) -> None:
 
     # Load data
     print(f"Loading {symbol} {timeframe} data...")
-    price_data = load_price_data(symbol, timeframe)
+    data_dir = Path(cfg["data_dir"]) if cfg.get("data_dir") else None
+    price_data = load_price_data(symbol, timeframe, data_dir=data_dir)
     print(f"  Loaded {len(price_data)} bars  ({price_data['datetime'].iloc[0].date()} to {price_data['datetime'].iloc[-1].date()})")
     print()
 

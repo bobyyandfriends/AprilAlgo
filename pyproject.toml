@@ -1,7 +1,7 @@
 [project]
 name = "aprilalgo"
-version = "0.4.1"
-description = "Modular multi-timeframe backtester with confluence, ML (XGBoost), and Streamlit UI"
+version = "0.5.0"
+description = "Modular multi-timeframe backtester: confluence, XGBoost ML, sampling/OOF/meta-label/regime routing, walk-forward tuner, SHAP, Streamlit UI"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
@@ -18,6 +18,7 @@ dependencies = [
     "scipy>=1.17.1",
     "shap>=0.48.0",
     "streamlit>=1.56.0",
+    "streamlit-plotly-events>=0.0.6",
     "xgboost>=3.2.0",
 ]
 

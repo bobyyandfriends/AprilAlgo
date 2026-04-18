@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pandas as pd
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _DATA_DIR = _PROJECT_ROOT / "data"
 
@@ -27,15 +29,29 @@ def discover_symbols() -> dict[str, list[str]]:
 
 
 def format_metric(key: str, value) -> str:
-    """Nicely format a metric value for display."""
-    if "pct" in key or "rate" in key or "return" in key or "drawdown" in key:
-        return f"{value:.2f}%"
-    if "ratio" in key or "factor" in key:
-        return f"{value:.2f}"
-    if "pnl" in key:
-        return f"${value:,.2f}"
-    if "trades" in key:
-        return str(int(value))
+    """Nicely format a metric value for display.
+
+    Guards against ``None`` and ``NaN`` values (e.g. metrics from failed tuner combos
+    or pages that load missing columns) so UI renders a dash instead of crashing.
+    """
+    if value is None:
+        return "—"
+    try:
+        if pd.isna(value):
+            return "—"
+    except (TypeError, ValueError):
+        pass
+    try:
+        if "pct" in key or "rate" in key or "return" in key or "drawdown" in key:
+            return f"{float(value):.2f}%"
+        if "ratio" in key or "factor" in key:
+            return f"{float(value):.2f}"
+        if "pnl" in key:
+            return f"${float(value):,.2f}"
+        if "trades" in key:
+            return str(int(float(value)))
+    except (TypeError, ValueError):
+        return str(value)
     return str(value)
 
 

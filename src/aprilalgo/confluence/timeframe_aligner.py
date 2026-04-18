@@ -30,10 +30,32 @@ def align_timeframes(
     """
     out = base_df.copy()
     out.set_index("datetime", inplace=True)
+    # ``out.join(..., how="left")`` on non-unique timestamps Cartesian-multiplies
+    # rows, and the forward-fill below assumes ``out.index`` is monotonically
+    # increasing. Enforce both invariants up-front with a clear error rather
+    # than producing silently-wrong output (§AUDIT B13).
+    if not out.index.is_unique:
+        raise ValueError(
+            "align_timeframes: base_df has duplicate datetimes; drop or aggregate "
+            "duplicates before aligning (join would Cartesian-multiply rows)."
+        )
+    if not out.index.is_monotonic_increasing:
+        raise ValueError(
+            "align_timeframes: base_df.datetime is not sorted ascending; the "
+            "forward-fill step requires a monotonic index."
+        )
 
     for tf_label, tf_df in higher_dfs.items():
         hdf = tf_df.copy()
         hdf.set_index("datetime", inplace=True)
+        if not hdf.index.is_unique:
+            raise ValueError(
+                f"align_timeframes: higher_dfs[{tf_label!r}] has duplicate datetimes"
+            )
+        if not hdf.index.is_monotonic_increasing:
+            raise ValueError(
+                f"align_timeframes: higher_dfs[{tf_label!r}].datetime is not sorted ascending"
+            )
 
         if signal_cols is None:
             cols = [c for c in hdf.columns if c.endswith("_bull") or c.endswith("_bear")]

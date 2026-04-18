@@ -78,7 +78,12 @@ def _check_robustness(
         }
 
     neighbor_mean = neighbors[metric].mean()
-    degradation = 1.0 - (neighbor_mean / best_metric) if best_metric != 0 else 0.0
+    # Use absolute denominator so a negative best (e.g. Sharpe = -1.0) does not
+    # flip the sign of the degradation ratio. With the raw ``best_metric`` in the
+    # denominator a better neighbor of a negative-Sharpe best would be reported
+    # as a positive degradation, which is the opposite of the intended semantic.
+    denom = abs(best_metric) if best_metric != 0 else 0.0
+    degradation = (best_metric - neighbor_mean) / denom if denom > 0 else 0.0
 
     is_robust = degradation < 0.3
 
