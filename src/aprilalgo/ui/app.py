@@ -21,6 +21,12 @@ PAGES = {
     "Signal Feed": "signals",
     "Dashboard": "dashboard",
     "Parameter Tuner": "tuner",
+    "ML lab": "model_lab",
+    "Model trainer": "model_trainer",
+    "Model metrics": "model_metrics",
+    "Walk-forward": "walk_forward_lab",
+    "Regime lab": "regime_lab",
+    "Portfolio lab": "portfolio_lab",
 }
 
 st.sidebar.title("AprilAlgo")
@@ -41,4 +47,22 @@ elif page == "Dashboard":
     render()
 elif page == "Parameter Tuner":
     from aprilalgo.ui.pages.tuner import render
+    render()
+elif page == "ML lab":
+    from aprilalgo.ui.pages.model_lab import render
+    render()
+elif page == "Model trainer":
+    from aprilalgo.ui.pages.model_trainer import render
+    render()
+elif page == "Model metrics":
+    from aprilalgo.ui.pages.model_metrics import render
+    render()
+elif page == "Walk-forward":
+    from aprilalgo.ui.pages.walk_forward_lab import render
+    render()
+elif page == "Regime lab":
+    from aprilalgo.ui.pages.regime_lab import render
+    render()
+elif page == "Portfolio lab":
+    from aprilalgo.ui.pages.portfolio_lab import render
     render()

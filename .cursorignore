@@ -1,0 +1,17 @@
+﻿# AprilAlgo - reduce Cursor indexing / token use; large binaries stay out of context
+
+# Raw and derived tabular outputs (see docs/DATA_SCHEMA.md)
+data/**/*.csv
+data/**/*.parquet
+outputs/**/*.csv
+outputs/**/*.parquet
+
+# Environment and caches
+.venv/
+__pycache__/
+
+# Repo metadata (use git outside Cursor for history)
+.git/
+
+# Serialized models / checkpoints (v0.3+)
+models/

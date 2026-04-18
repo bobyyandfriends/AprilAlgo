@@ -12,7 +12,17 @@ This file provides Claude with everything it needs to understand and work effect
 - **Package manager:** `uv` (replaces pip + venv)
 - **License:** Apache 2.0
 - **Owner:** Joshua
-- **Current version:** 0.2.0
+- **Current version:** 0.4.1 (ML + meta/regime/reporting + SHAP + information bars baseline)
+
+---
+
+## v0.3+ development notes
+
+- **Interface map:** `docs/DATA_SCHEMA.md` defines Raw OHLCV → Enriched Features → Confluence → Backtest metrics → ML labels (triple-barrier). Verify column names and types there before integration code.
+- **ML CLI:** `uv run python -m aprilalgo.cli train|evaluate|oof|predict|importance|shap|walk-forward|bars --config configs/ml/default.yaml` (plus `--model-dir` / `--output` where applicable)
+- **ML bars:** optional `information_bars` block in the ML YAML — `load_ohlcv_for_ml` in `data/loader.py` builds the series used for triple-barrier, features, and walk-forward `n_bars`; recipe is stored in `meta.json` for inference and `ml_xgboost`.
+- **Agent governance:** `.cursorrules` — Model Routing Protocol first; isolation of legacy indicator/backtest internals when only contracts matter; no look-ahead; schema-first; documentation loop after substantive changes.
+- **Token discipline:** Prefer `AGENTS.md`, `docs/MODEL_ROUTING.md`, and `docs/DATA_SCHEMA.md` over bulk source reads.
 
 ---
 
@@ -23,6 +33,11 @@ AprilAlgo/
 ├── src/aprilalgo/              # Main Python package
 │   ├── __init__.py             # Version and top-level exports
 │   ├── config.py               # YAML config loader
+│   ├── labels/                 # ML labeling (v0.3)
+│   │   └── triple_barrier.py   # Triple-barrier targets from OHLC
+│   ├── ml/                     # ML utilities (v0.3)
+│   │   ├── features.py         # Feature matrix: registry columns only, no OHLCV
+│   │   └── cv.py               # PurgedKFold + learning_matrix (t0/t1 for CV)
 │   ├── data/                   # Data layer
 │   │   ├── loader.py           # Load CSVs by symbol + timeframe
 │   │   ├── fetcher.py          # Fetch from Massive API (ex-Polygon.io)
@@ -77,6 +92,8 @@ AprilAlgo/
 ├── scripts/
 │   └── fetch_data.py           # Bulk download via Massive API
 ├── docs/                       # Reference documentation
+│   ├── DATA_SCHEMA.md          # Column / layer contracts (interface map)
+│   ├── TRIPLE_BARRIER_MATH.md  # Barrier definitions + same-bar policy
 │   ├── HANDOFF.md
 │   ├── LEARNING.md
 │   └── REPO_ANALYSIS.md

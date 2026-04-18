@@ -1,9 +1,9 @@
 # AprilAlgo — Full System Architecture
 
-> **Version:** Design Doc v1.0  
-> **Date:** March 29, 2026  
-> **Status:** Proposed — review before implementation  
-> **Scope:** End-state vision (v0.1 → v0.4+)
+> **Version:** Design Doc v1.1 (living)  
+> **Date:** April 17, 2026  
+> **Status:** Baseline v0.4.1 shipped; sections below mix shipped modules and forward roadmap  
+> **Scope:** v0.1 → v0.5+
 
 ---
 
@@ -71,23 +71,25 @@
 - **Parameter tuning engine** — grid search over indicator params (e.g. SMA 19 vs 20), find best combos per symbol/timeframe
 - **Fractional Kelly** position sizing
 
-### v0.3 — Machine Learning + Explainability + UI
+### v0.3 — Machine Learning + UI ✅
 - **Triple-barrier labeling** for supervised learning targets
 - **XGBoost classifier** for signal generation
 - **Purged k-fold CV** (no temporal leakage)
-- **SHAP integration** — TreeExplainer on XGBoost
-- **Intelligent Commentary Generator** — human-readable trade explanations
-- **Streamlit UI** — charts, signal feed, SHAP plots, dashboard
-- **Signal logging** — persist every signal with features, SHAP, outcome
+- **Feature importance** — gain/cover + permutation + SHAP baseline exports
+- **Streamlit UI** — charts, signal feed, dashboard, model trainer / metrics pages
+- **Signal logging** — JSONL with full schema hooks for outcomes and meta labels
 
-### v0.4 — Meta-Modeling + Advanced Features
-- **Meta-labeling** — secondary model predicts primary model accuracy
-- **Information-driven bars** (volume, dollar, tick bars)
-- **Feature importance** (MDI, MDA, SHAP-based)
-- **Regime detection** (volatility clustering, HMM or similar)
-- **Walk-forward optimization** framework
-- **Multi-asset portfolio** — run strategies across all 73 symbols
-- **Export/reporting** — PDF/HTML performance reports
+### v0.4 — Meta-Modeling + Advanced Features ✅ (baseline complete; polish continues)
+- **Meta-labeling** — secondary model on primary correctness (OOF / purged helpers)
+- **Information-driven bars** (volume, dollar, tick bars) — CLI + data module shipped
+- **Regime detection** — realized-vol quantile buckets + optional ``hmmlearn`` HMM path
+- **Walk-forward splits** — rolling windows + summary metrics + CLI / Streamlit surfacing
+- **Multi-asset portfolio runner** — per-symbol backtests with pooled capital options
+- **Export/reporting** — Jinja HTML sections (equity, metrics, importance, regime)
+
+### v0.5 — ML sampling + polish (in progress)
+- **Information bars in end-to-end ML** — optional YAML drives the same bar series for train, CV, predict, SHAP, walk-forward bar counts, and ``ml_xgboost`` backtest parity (recipe in ``meta.json``)
+- **SHAP / bars / walk-forward UX** — commentary, presets, deeper Streamlit analytics (polish)
 
 ---
 

@@ -4,6 +4,12 @@ Non-negotiable rules for any AI agent working on this project.
 
 ---
 
+## Token Conservation
+
+Prioritize reading `.md` documentation over `.py` source files for context. Start from `docs/DATA_SCHEMA.md` (column contracts), `docs/MODEL_ROUTING.md` (which Cursor model tier to use per task), `ARCHITECTURE.md`, `CLAUDE.md`, and this file before opening large or numerous modules. Use targeted file reads—not whole subtrees—when implementing against a known interface.
+
+---
+
 ## Project Identity
 
 - **Name:** AprilAlgo
@@ -53,6 +59,10 @@ Never edit `pyproject.toml` dependencies by hand. Always use `uv add`.
 | `backtest/` | Simulation engine | Bar-by-bar loop, trade management, metrics |
 | `strategies/` | Trading logic | Subclass `BaseStrategy` or use `ConfigurableStrategy` |
 | `ui/` | Streamlit dashboard | Pages pull from descriptor catalog, no hardcoded indicator lists |
+| `labels/` | Triple-barrier (and future) ML labels | OHLC-only path; see `docs/TRIPLE_BARRIER_MATH.md` |
+| `ml/` | Feature matrix, trainer, CV, importance (v0.3–0.4) | `features.py`, `trainer.py`, `evaluator.py`, `importance.py`, `cv.py`, `sampling.py` |
+| `meta/` | Regime tagging (v0.4) | `regime.py` |
+| `reporting/` | HTML reports (v0.4) | `report.py` |
 | `tests/` | Persistent test suite | `uv run pytest tests/ -v` |
 
 ---
@@ -84,6 +94,7 @@ When making changes, update `CHANGELOG.md` under `[Unreleased]`:
 uv run python main.py                                    # default backtest
 uv run python main.py --strategy demark_confluence        # DeMark strategy
 uv run streamlit run src/aprilalgo/ui/app.py              # Streamlit UI
-uv run pytest tests/ -v                                   # test suite (39 tests)
+uv run pytest tests/ -v                                   # test suite (~129 tests)
+uv run python -m aprilalgo.cli train --config configs/ml/default.yaml  # ML train
 uv run python scripts/fetch_data.py --symbols AAPL,NVDA   # fetch data
 ```

@@ -1,83 +1,54 @@
 # AprilAlgo
 
-A Python data science and analysis project. Built for exploring, cleaning, and visualizing data using pandas, numpy, matplotlib, and Jupyter.
+Modular **multi-timeframe** stock backtester in Python: technical indicators, **confluence** scoring, parameter tuning, **XGBoost** + purged CV (v0.3), meta-label / regime / reporting helpers (v0.4), and a **Streamlit** UI.
 
-## Features
+- **Python** 3.11+ · **uv** · **Apache-2.0**
 
-- Data loading and cleaning with **pandas**
-- Numerical computation with **numpy**
-- Charts and plots with **matplotlib**
-- Interactive analysis with **Jupyter Notebooks**
-
-## Requirements
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) package manager
-
-## Installation
-
-1. Clone or download this project.
-2. Install dependencies using `uv`:
+## Install
 
 ```bash
 uv sync
+# Optional: HMM regimes (`add_vol_regime(use_hmm=True)`) — needs wheels for your Python (often 3.11–3.12):
+uv sync --extra hmm
 ```
 
-This will automatically create a virtual environment (`.venv`) and install all required packages.
+## Quick commands
 
-## Usage
+| Task | Command |
+|------|---------|
+| Backtest (CLI) | `uv run python main.py --symbol AAPL --strategy demark_confluence` |
+| Streamlit UI | `uv run streamlit run src/aprilalgo/ui/app.py` |
+| Tests | `uv run pytest tests/ -v` |
+| ML train | `uv run python -m aprilalgo.cli train --config configs/ml/default.yaml` |
+| ML sampling (overlap / bootstrap weights) | Same config + optional YAML `sampling` block: `strategy: uniqueness` or `strategy: bootstrap` (see `docs/DATA_SCHEMA.md` §11) |
+| ML evaluate (purged CV) | `uv run python -m aprilalgo.cli evaluate --config configs/ml/default.yaml` |
+| ML OOF (purged folds → CSV) | `uv run python -m aprilalgo.cli train --config configs/ml/default.yaml` then `uv run python -m aprilalgo.cli oof --config configs/ml/default.yaml` (writes `oof_primary.csv`; see `docs/DATA_SCHEMA.md` §12) |
+| ML predict | `uv run python -m aprilalgo.cli predict --config configs/ml/default.yaml --output predictions.csv` |
+| Feature importance | `uv run python -m aprilalgo.cli importance --config configs/ml/default.yaml` |
+| SHAP export | `uv run python -m aprilalgo.cli shap --config configs/ml/default.yaml` |
+| Walk-forward (JSON) | `uv run python -m aprilalgo.cli walk-forward --config configs/ml/default.yaml` |
+| Information bars (CSV) | `uv run python -m aprilalgo.cli bars --input path.csv --bar-type volume --threshold 1e6 --output out.csv` |
 
-### Start a Jupyter Notebook
+Use **`configs/ml/default.yaml`** with `data_dir: tests/fixtures` and symbol **`TEST`** for a built-in OHLCV smoke path (no live data required). Optional **`information_bars`** in that YAML aggregates the loaded series before labels and features (see `docs/DATA_SCHEMA.md`). Optional **`sampling`** controls per-row XGBoost weights (`uniqueness` vs sequential `bootstrap`; see §11).
 
-```bash
-uv run jupyter notebook
+## Docs
+
+- **[docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)** — column contracts between layers  
+- **[docs/MODEL_ROUTING.md](docs/MODEL_ROUTING.md)** — Cursor agent model tiers  
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — system design  
+- **[AGENTS.md](AGENTS.md)** — rules for AI coding agents  
+- **[CHANGELOG.md](CHANGELOG.md)** — releases
+
+## Layout
+
 ```
-
-### Run the main script
-
-```bash
-uv run python main.py
-```
-
-### Import the package in your code
-
-```python
-import aprilalgo
-
-print(aprilalgo.__version__)
-```
-
-## Project Structure
-
-```
-AprilAlgo/
-├── .gitignore
-├── .python-version
-├── .venv/                  # Virtual environment (auto-created by uv)
-├── AGENTS.md
-├── CHANGELOG.md
-├── CLAUDE.md
-├── LICENSE
-├── README.md               # This file
-├── main.py                 # Entry point script
-├── pyproject.toml          # Project config and dependencies
-├── uv.lock                 # Locked dependency versions
-└── src/
-    └── aprilalgo/
-        └── __init__.py     # Package entry point
-```
-
-## Adding New Dependencies
-
-```bash
-uv add <package-name>
-```
-
-Example:
-```bash
-uv add seaborn scikit-learn
+src/aprilalgo/
+  data/ indicators/ confluence/ tuner/ backtest/ strategies/
+  labels/ ml/ meta/ reporting/ ui/
+configs/     # YAML (backtest + ml)
+tests/       # pytest + fixtures/daily_data/TEST_daily.csv
 ```
 
 ## License
 
-This project is licensed under the Apache 2.0 License — see [LICENSE](LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE).

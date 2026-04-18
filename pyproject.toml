@@ -1,11 +1,12 @@
 [project]
 name = "aprilalgo"
-version = "0.2.0"
-description = "A Python data science and analysis project"
+version = "0.4.1"
+description = "Modular multi-timeframe backtester with confluence, ML (XGBoost), and Streamlit UI"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 dependencies = [
+    "jinja2>=3.1.6",
     "jupyter>=1.1.1",
     "massive>=2.4.0",
     "matplotlib>=3.10.8",
@@ -13,8 +14,16 @@ dependencies = [
     "pandas>=3.0.1",
     "plotly>=6.6.0",
     "pyyaml>=6.0.3",
+    "scikit-learn>=1.8.0",
     "scipy>=1.17.1",
+    "shap>=0.48.0",
     "streamlit>=1.56.0",
+    "xgboost>=3.2.0",
+]
+
+[project.optional-dependencies]
+hmm = [
+    "hmmlearn>=0.3.3",
 ]
 
 [build-system]

@@ -1,0 +1,50 @@
+# Example ML pipeline config. For TEST fixture: set data_dir to tests/fixtures (repo root).
+symbol: TEST
+symbols: [TEST]
+groupby_symbol: false
+timeframe: daily
+data_dir: tests/fixtures
+
+# Optional: per-row sample weights for XGBoost (v0.5).
+# sampling:
+#   strategy: none          # none | uniqueness | bootstrap
+#   random_state: 42       # bootstrap draw seed (defaults to top-level random_state)
+#   n_draw: null            # bootstrap only: rows drawn with replacement (default = n training rows)
+
+# Optional: aggregate raw OHLCV before triple-barrier + features (tick / volume / dollar).
+# information_bars:
+#   enabled: true
+#   bar_type: tick
+#   threshold: 5
+#   source_timeframe: daily
+
+task: binary
+random_state: 42
+importance_repeats: 3
+
+walk_forward:
+  n_folds: 4
+  min_train: 50
+  test_size: null
+
+triple_barrier:
+  upper_pct: 0.02
+  lower_pct: 0.02
+  vertical_bars: 5
+
+indicators:
+  - name: rsi
+    period: 14
+  - name: sma
+    period: 20
+
+cv:
+  n_splits: 3
+  embargo: 1
+
+model:
+  out_dir: models/xgboost/latest
+  xgb:
+    n_estimators: 30
+    max_depth: 3
+    learning_rate: 0.1

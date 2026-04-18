@@ -28,14 +28,18 @@ def run_backtest(
 
     strategy.init(price_data)
 
-    for idx in range(len(price_data)):
-        row = price_data.iloc[idx]
+    loop_df = getattr(strategy, "_backtest_bars_df", None)
+    if loop_df is None:
+        loop_df = price_data
+
+    for idx in range(len(loop_df)):
+        row = loop_df.iloc[idx]
         strategy.on_bar(idx, row, portfolio)
         portfolio.record_equity(row["datetime"], row["close"])
 
     # Force-close any open positions at the last bar
     if portfolio.has_open_position:
-        last = price_data.iloc[-1]
+        last = loop_df.iloc[-1]
         for trade in list(portfolio.open_positions):
             portfolio.close_trade(trade, last["datetime"], last["close"])
 

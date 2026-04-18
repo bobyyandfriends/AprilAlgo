@@ -9,26 +9,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Primary OOF (v0.5 Sprint 3)** — `aprilalgo.ml.oof.compute_primary_oof` (purged k-fold stacked predictions); CLI `oof` writes `oof_primary.csv` and merges `oof.path` into existing `meta.json`; `tests/test_oof.py`, `tests/test_cli_ml.py::test_cli_oof_writes_csv`
+- **Optional `hmm` extra** — `[project.optional-dependencies] hmm` with `hmmlearn` for `add_vol_regime(use_hmm=True)`; `uv sync --extra hmm` when wheels exist for your Python
+- **Sampling strategies (v0.5 Sprint 2)** — CLI `_weights_for_training` supports `sampling.strategy: uniqueness` (overlap weights) and `bootstrap` (multiplicity weights from `sequential_bootstrap_sample`); `meta.json.sampling` records `random_state` / `n_draw` for bootstrap; tests in `tests/test_sampling.py`, `tests/test_cli_ml.py`
+- **Sample weights (v0.5 Sprint 1)** — `train_xgb_classifier(..., sample_weight=...)`; CLI `_weights_for_training` stub (uniform when `sampling` absent); `meta.json` key `sampling` with default `strategy: none`; tests `tests/test_trainer_sample_weight.py`
+- **ML pipeline information bars** — optional YAML `information_bars` (`enabled`, `bar_type`, `threshold`, optional `source_timeframe`) applies tick/volume/dollar aggregation after `load_price_data` and before triple-barrier + features (`data/loader.py` `load_ohlcv_for_ml`, `data/bars.py` `apply_information_bars_from_config`)
+- **`meta.json`** — persists `information_bars` recipe for predict/SHAP and `ml_xgboost` replay; backtest engine iterates bar-aligned rows when the strategy exposes `_backtest_bars_df`
+- **`tests/test_loader_ml_bars.py`**, **`tests/test_cli_ml.py`** — coverage for bar-enabled train/predict
+
 ### Planned
-- XGBoost ML model + SHAP explainability — v0.3
-- Triple-barrier labeling + purged k-fold CV — v0.3
-- Meta-labeling + regime detection — v0.4
+- Full SHAP commentary UX polish
+- Additional information-driven bars research and tuning presets
+- Walk-forward UI deep analytics polish
+
+---
+
+## [0.4.1] - 2026-04-17
 
 ### Added
-- **Indicator descriptor system** (`indicators/descriptor.py`): `IndicatorSpec` and `ParamSpec` dataclasses — single source of truth for indicator metadata (name, params, ranges, category, overlay flag). The UI and tuner auto-generate controls from this instead of hardcoding.
-- **Catalog function** `get_catalog()` — returns all 11 registered indicators with full metadata
-- **`IndicatorRegistry.add_by_name()`** and **`IndicatorRegistry.from_config()`** — build indicator pipelines from catalog names or YAML-style config dicts
-- **`ConfigurableStrategy`** (`strategies/configurable.py`): compose any indicator combination via config, no new Python class needed. Trades on confluence score.
-- **Streamlit UI** (`ui/`): 4-page app (Charts, Signal Feed, Dashboard, Parameter Tuner) with interactive Plotly charts, auto-generated parameter sliders from descriptor catalog
-- **Persistent test suite** (`tests/`): 39 pytest tests covering indicators, backtest, confluence, and tuner
+- **`src/aprilalgo/ml/explain.py`** — SHAP values + SHAP importance tables for saved model bundles; **`tests/test_shap.py`**
+- **CLI** — new `shap` subcommand writing `shap_values.csv` and `shap_importance.csv`
+- **`src/aprilalgo/data/bars.py`** — information-driven bar builders (`tick`, `volume`, `dollar`); **`tests/test_data_bars.py`**
+- **CLI** — new `bars` subcommand for building information-driven bars from OHLCV CSV
+- **Walk-forward summary** in CLI JSON (`summary.n_splits`, `coverage_pct`, mean sizes) and per-fold `test_return`
 
 ### Changed
-- **BREAKING: indicator column names now include parameters** — `rsi_bull` → `rsi_14_bull`, `sma_bull` → `sma_20_bull`, `bb_bull` → `bb_20_bull`, etc. This prevents column collision when calling the same indicator with different parameters (e.g., SMA(20) + SMA(50))
-- All 4 UI pages now pull indicator options and parameter controls from the descriptor catalog instead of hardcoded lists
-- Signals page `_enrich_all()` now applies every registered indicator automatically via `get_catalog()`
-- Moved `HANDOFF.md`, `LEARNING.md`, `REPO_ANALYSIS.md` to `docs/` folder (root declutter)
-- Removed empty `ui/components/` package
-- Corrected dual-signal reinforcement model in ARCHITECTURE.md
+- **`src/aprilalgo/reporting/report.py`** — new HTML sections: `section-shap`, `section-walk-forward`
+- **`src/aprilalgo/ui/pages/model_trainer.py`** — added SHAP button/action
+- **`src/aprilalgo/ui/pages/model_metrics.py`** — richer metrics presentation (F1 display, ROC quick view, latest importance chart, proxy equity curve)
+- **`src/aprilalgo/ui/pages/walk_forward_lab.py`** — summary + fold dataframe + chart + CSV export
+- **`docs/DATA_SCHEMA.md`** — explainability artifacts, bars schema, walk-forward output schema
+- **`tests.md`** — inventory regenerated for latest test count
+
+### Dependencies
+- Added **`shap`** runtime dependency.
+
+---
+
+## [0.4.0] - 2026-04-16
+
+### Added
+- **`src/aprilalgo/labels/meta_label.py`** — meta-label construction + purged meta logistic; **`tests/test_meta_label.py`**
+- **`src/aprilalgo/ml/sampling.py`** — overlap / uniqueness weights; **`tests/test_sampling.py`**
+- **`src/aprilalgo/meta/regime.py`** — realized vol + `vol_regime` quantile buckets; **`tests/test_regime.py`**
+- **`src/aprilalgo/tuner/walk_forward.py`** — walk-forward index splits; **`tests/test_walk_forward.py`**
+- **`src/aprilalgo/backtest/portfolio_runner.py`** — multi-symbol backtest helper
+- **`src/aprilalgo/reporting/report.py`** — Jinja2 HTML report; **`tests/test_reporting.py`**
+- **Streamlit** — `ML lab`, `Regime lab`, `Portfolio lab` pages
+- **`jinja2`** dependency
+
+---
+
+## [0.3.0] - 2026-04-16
+
+### Added
+- **`src/aprilalgo/labels/targets.py`** — unified triple-barrier target columns; **`tests/test_targets.py`**
+- **`src/aprilalgo/ml/trainer.py`** — XGBoost train/save/load via Booster bundle (`meta.json` + `xgboost.json`); **`tests/test_trainer.py`**
+- **`src/aprilalgo/ml/evaluator.py`** — purged CV metrics; **`tests/test_evaluator.py`**
+- **`src/aprilalgo/ml/importance.py`** — gain + permutation importance
+- **`src/aprilalgo/backtest/logger.py`** — JSONL signal logger; **`tests/test_logger.py`**
+- **`src/aprilalgo/strategies/ml_strategy.py`** — `ml_xgboost` strategy; registered in **`STRATEGIES`**
+- **`src/aprilalgo/cli.py`** — `train` / `evaluate` / `importance` subcommands; **`configs/ml/default.yaml`**
+- **`tests/fixtures/daily_data/TEST_daily.csv`** — small OHLCV fixture for ML smoke tests
+- **`xgboost`**, **`scikit-learn`** dependencies
+- **`docs/MODEL_ROUTING.md`** — Cursor model tier routing; **`.cursorrules`** Model Routing Protocol
+
+### Changed
+- **`README.md`**, **`AGENTS.md`**, **`docs/DATA_SCHEMA.md`**, **`docs/SESSION_HANDOFF.md`** — aligned with ML pipeline
+- **`tests.md`** — regenerate after test count changes
 
 ---
 
