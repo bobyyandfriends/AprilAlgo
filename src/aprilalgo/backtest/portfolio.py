@@ -140,22 +140,19 @@ class Portfolio:
         if self.borrow_rate_bps_per_day > 0.0 and self._last_equity_time is not None:
             elapsed_days = (time - self._last_equity_time).total_seconds() / 86400.0
             if elapsed_days > 0.0:
-                short_notional = sum(
-                    price * t.quantity for t in self.open_positions if t.side == "short"
-                )
+                short_notional = sum(price * t.quantity for t in self.open_positions if t.side == "short")
                 charge = short_notional * (self.borrow_rate_bps_per_day / 10_000.0) * elapsed_days
                 self.cash -= charge
                 self._accrued_borrow += charge
 
         mtm = sum(t.unrealized_pnl(price) for t in self.open_positions)
-        open_adjust = sum(
-            t.entry_price * t.quantity * (1 if t.side == "long" else -1)
-            for t in self.open_positions
+        open_adjust = sum(t.entry_price * t.quantity * (1 if t.side == "long" else -1) for t in self.open_positions)
+        self.equity_curve.append(
+            {
+                "time": time,
+                "equity": self.cash + mtm + open_adjust,
+            }
         )
-        self.equity_curve.append({
-            "time": time,
-            "equity": self.cash + mtm + open_adjust,
-        })
         self._last_equity_time = time
 
     def get_equity_df(self) -> pd.DataFrame:

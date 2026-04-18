@@ -78,9 +78,7 @@ def compute_primary_oof(
         # Map this fold's class axis to the global axis; classes missing from the
         # fold's training set remain NaN in the OOF matrix for those test rows.
         col_map = {float(c): j for j, c in enumerate(fold_classes)}
-        mapped = np.full(
-            (test_idx.size, len(global_classes)), np.nan, dtype=np.float64
-        )
+        mapped = np.full((test_idx.size, len(global_classes)), np.nan, dtype=np.float64)
         for g_idx, cls in enumerate(global_classes):
             j = col_map.get(float(cls))
             if j is not None:

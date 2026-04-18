@@ -74,11 +74,15 @@ def calculate_historical_probability(
     valid = valid.copy()
     valid["_bin"] = pd.cut(valid["confluence_net"], bins=bins)
 
-    summary = valid.groupby("_bin", observed=False).agg(
-        count=("_outcome", "count"),
-        win_rate=("_outcome", "mean"),
-        avg_return=("_return", "mean"),
-    ).reset_index()
+    summary = (
+        valid.groupby("_bin", observed=False)
+        .agg(
+            count=("_outcome", "count"),
+            win_rate=("_outcome", "mean"),
+            avg_return=("_return", "mean"),
+        )
+        .reset_index()
+    )
 
     summary.rename(columns={"_bin": "bin_label"}, inplace=True)
 

@@ -50,11 +50,9 @@ def add_vol_regime(
 
     if use_hmm:
         try:
-            from hmmlearn.hmm import GaussianHMM  # type: ignore[import-untyped]
+            from hmmlearn.hmm import GaussianHMM
         except ImportError as e:
-            raise ImportError(
-                "add_vol_regime(use_hmm=True) requires the hmmlearn package"
-            ) from e
+            raise ImportError("add_vol_regime(use_hmm=True) requires the hmmlearn package") from e
         k = int(hmm_states or n_buckets)
         # ``np.log`` emits ``-inf`` for a zero close and ``NaN`` for a negative
         # one; ``GaussianHMM.fit`` errors opaquely on either. Mask non-positive
@@ -63,12 +61,7 @@ def add_vol_regime(
         close_f = out[close_col].astype(float)
         safe_close = close_f.where(close_f > 0.0)
         lr_s = np.log(safe_close).diff()
-        lr = (
-            lr_s.replace([np.inf, -np.inf], np.nan)
-            .fillna(0.0)
-            .to_numpy()
-            .reshape(-1, 1)
-        )
+        lr = lr_s.replace([np.inf, -np.inf], np.nan).fillna(0.0).to_numpy().reshape(-1, 1)
         model = GaussianHMM(
             n_components=k,
             covariance_type="diag",

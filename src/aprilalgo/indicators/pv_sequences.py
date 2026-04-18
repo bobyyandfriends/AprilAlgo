@@ -49,15 +49,15 @@ def pv_sequences(
         out["pv_bear"] = np.array([], dtype=bool)
         return out
 
-    price_up = (out["close"].values > np.roll(out["close"].values, 1))
-    vol_up = (out["volume"].values > np.roll(out["volume"].values, 1))
+    price_up = out["close"].values > np.roll(out["close"].values, 1)
+    vol_up = out["volume"].values > np.roll(out["volume"].values, 1)
     price_up[0] = False
     vol_up[0] = False
 
     states = np.where(
-        price_up & vol_up, PU_VU,
-        np.where(price_up & ~vol_up, PU_VD,
-                 np.where(~price_up & vol_up, PD_VU, PD_VD))
+        price_up & vol_up,
+        PU_VU,
+        np.where(price_up & ~vol_up, PU_VD, np.where(~price_up & vol_up, PD_VU, PD_VD)),
     )
 
     streaks = np.ones(n, dtype=int)
@@ -71,16 +71,10 @@ def pv_sequences(
     prev_states[0] = states[0]
 
     # Bullish: PU_VU streak OR transition from PD_VU to PU_VU (sellers exhausted)
-    bull = (
-        ((states == PU_VU) & (streaks >= streak_threshold))
-        | ((states == PU_VU) & (prev_states == PD_VU))
-    )
+    bull = ((states == PU_VU) & (streaks >= streak_threshold)) | ((states == PU_VU) & (prev_states == PD_VU))
 
     # Bearish: PD_VU streak OR transition from PU_VU to PD_VU (buyers exhausted)
-    bear = (
-        ((states == PD_VU) & (streaks >= streak_threshold))
-        | ((states == PD_VU) & (prev_states == PU_VU))
-    )
+    bear = ((states == PD_VU) & (streaks >= streak_threshold)) | ((states == PD_VU) & (prev_states == PU_VU))
 
     out["pv_state"] = states
     out["pv_state_name"] = [_STATE_NAMES[s] for s in states]

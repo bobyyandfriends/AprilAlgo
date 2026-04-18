@@ -30,21 +30,23 @@ from aprilalgo.data import (
     build_volume_bars,
     information_bars_meta_from_cfg,
     load_ohlcv_for_ml,
-    load_price_data,
 )
 from aprilalgo.labels.meta_label import fit_meta_logit_purged
 from aprilalgo.ml.evaluator import purged_cv_evaluate
-from aprilalgo.ml.meta_bundle import save_meta_logit_bundle
-from aprilalgo.ml.oof import compute_primary_oof
 from aprilalgo.ml.explain import shap_importance_table, shap_values_table
 from aprilalgo.ml.importance import (
     permutation_importance_table,
     xgb_importance_table,
 )
+from aprilalgo.ml.meta_bundle import save_meta_logit_bundle
+from aprilalgo.ml.oof import compute_primary_oof
 from aprilalgo.ml.pipeline import (
-    apply_regime_if_enabled as _apply_regime_if_enabled,
     prepare_xy as _prepare_xy,
+)
+from aprilalgo.ml.pipeline import (
     weights_for_training as _weights_for_training,
+)
+from aprilalgo.ml.pipeline import (
     xgb_estimator_factory as _xgb_estimator_factory,
 )
 from aprilalgo.ml.trainer import (
@@ -118,11 +120,7 @@ def _cfg_for_inference(cfg: dict[str, Any], bundle: ModelBundle) -> dict[str, An
 
 def _regime_groupby_training(cfg: dict[str, Any]) -> bool:
     r = cfg.get("regime")
-    return (
-        isinstance(r, dict)
-        and bool(r.get("enabled"))
-        and bool(r.get("groupby", False))
-    )
+    return isinstance(r, dict) and bool(r.get("enabled")) and bool(r.get("groupby", False))
 
 
 def _train_regime_groupby_bundles(
@@ -140,15 +138,11 @@ def _train_regime_groupby_bundles(
 ) -> None:
     """Train one XGBoost bundle per ``vol_regime`` bucket; write ``regime_index.json``."""
     if "vol_regime" not in X.columns:
-        raise ValueError(
-            "regime.groupby requires vol_regime in the feature matrix (enable regime in YAML)."
-        )
+        raise ValueError("regime.groupby requires vol_regime in the feature matrix (enable regime in YAML).")
     reg_col = X["vol_regime"]
     keys = sorted({int(round(float(v))) for v in reg_col.dropna().unique()})
     if not keys:
-        raise ValueError(
-            "regime.groupby training requires at least one non-NaN vol_regime value."
-        )
+        raise ValueError("regime.groupby training requires at least one non-NaN vol_regime value.")
     default_train_k = int(keys[0])
 
     base_extra: dict[str, Any] = {
@@ -167,10 +161,7 @@ def _train_regime_groupby_bundles(
     classes_ref: tuple[float, ...] | None = None
 
     for k in keys:
-        if k == default_train_k:
-            mask = reg_col.isna() | reg_col.eq(float(k))
-        else:
-            mask = reg_col.eq(float(k))
+        mask = reg_col.isna() | reg_col.eq(float(k)) if k == default_train_k else reg_col.eq(float(k))
         mask_arr = mask.to_numpy()
         if not mask_arr.any():
             continue
@@ -194,8 +185,7 @@ def _train_regime_groupby_bundles(
             classes_ref = cl
         elif cl != classes_ref:
             raise ValueError(
-                "regime.groupby: all buckets must expose the same sklearn classes_ "
-                f"(got {classes_ref} vs {cl})"
+                f"regime.groupby: all buckets must expose the same sklearn classes_ (got {classes_ref} vs {cl})"
             )
         subdir = out_dir / f"regime_{k}"
         extra = dict(base_extra)
@@ -220,16 +210,13 @@ def _train_regime_groupby_bundles(
         raise ValueError("regime.groupby: no bucket produced a valid model")
     if str(default_train_k) not in buckets_map:
         raise ValueError(
-            "regime.groupby: the default vol_regime bucket could not be trained "
-            f"(expected bucket {default_train_k})."
+            f"regime.groupby: the default vol_regime bucket could not be trained (expected bucket {default_train_k})."
         )
     default_key = str(min(int(bk) for bk in buckets_map))
     default_sub = buckets_map[default_key]
     index = {"buckets": buckets_map, "default": default_sub}
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "regime_index.json").write_text(
-        json.dumps(index, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    (out_dir / "regime_index.json").write_text(json.dumps(index, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def _train_and_save(cfg: dict[str, Any], *, symbol: str, out_dir: Path) -> None:
@@ -359,15 +346,11 @@ def cmd_oof(args: argparse.Namespace) -> None:
     if meta_path.is_file():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         meta["oof"] = {"path": fname}
-        meta_path.write_text(
-            json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8"
-        )
+        meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
     print(f"Wrote {len(oof_df)} rows to {out_path.resolve()}")
 
 
-def _read_oof_primary_aligned(
-    oof_path: Path, *, n_rows: int
-) -> tuple[np.ndarray, pd.DataFrame]:
+def _read_oof_primary_aligned(oof_path: Path, *, n_rows: int) -> tuple[np.ndarray, pd.DataFrame]:
     """Load ``oof_primary.csv`` and return ``oof_pred`` aligned to ``0..n_rows-1``."""
     if not oof_path.is_file():
         raise FileNotFoundError(
@@ -376,9 +359,7 @@ def _read_oof_primary_aligned(
         )
     oof = pd.read_csv(oof_path)
     if "row_idx" not in oof.columns or "oof_pred" not in oof.columns:
-        raise ValueError(
-            f"{oof_path} must contain columns 'row_idx' and 'oof_pred' (from `cli oof`)."
-        )
+        raise ValueError(f"{oof_path} must contain columns 'row_idx' and 'oof_pred' (from `cli oof`).")
     oof = oof.sort_values("row_idx").reset_index(drop=True)
     if len(oof) != n_rows:
         raise ValueError(
@@ -387,9 +368,7 @@ def _read_oof_primary_aligned(
         )
     ridx = oof["row_idx"].to_numpy(dtype=np.int64)
     if not (ridx == np.arange(n_rows, dtype=np.int64)).all():
-        raise ValueError(
-            f"{oof_path}: row_idx must equal 0..{n_rows - 1} in order (same mask as train/oof)."
-        )
+        raise ValueError(f"{oof_path}: row_idx must equal 0..{n_rows - 1} in order (same mask as train/oof).")
     return oof["oof_pred"].to_numpy(dtype=np.float64), oof
 
 
@@ -434,19 +413,14 @@ def cmd_meta_train(args: argparse.Namespace) -> None:
     meta_oof_df.to_csv(out_dir / "meta_oof.csv", index=False)
 
     meta_path = out_dir / "meta.json"
-    if meta_path.is_file():
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    else:
-        meta = {}
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.is_file() else {}
     threshold = float(meta_block.get("threshold", 0.5))
     meta["meta_logit"] = {
         "enabled": True,
         "path": "meta_logit.json",
         "threshold": threshold,
     }
-    meta_path.write_text(
-        json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
     print(
         f"Wrote meta_logit.json + meta_oof.csv under {out_dir.resolve()}; "
         f"updated {meta_path.name} meta_logit.enabled=true"
@@ -471,27 +445,17 @@ def _predict_regime_routed(
     default_subdir = idx["default"]
     default_bundle = load_model_bundle(model_dir / default_subdir)
     default_key = next(k for k, v in buckets.items() if v == default_subdir)
-    bundles = {
-        str(k): load_model_bundle(model_dir / rel) for k, rel in buckets.items()
-    }
+    bundles = {str(k): load_model_bundle(model_dir / rel) for k, rel in buckets.items()}
     cfg_inf = _cfg_for_inference(cfg, default_bundle)
     X, y, _t0, _t1, _task = _prepare_xy(cfg_inf, symbol=str(sym))
     cols0 = list(default_bundle.feature_names)
     for b in bundles.values():
         if list(b.feature_names) != cols0:
-            raise ValueError(
-                "per-regime bundles must share identical feature_names for routed predict"
-            )
+            raise ValueError("per-regime bundles must share identical feature_names for routed predict")
     if "vol_regime" not in X.columns:
         raise ValueError("routed predict requires vol_regime in the prepared feature matrix")
 
-    master_classes = sorted(
-        {
-            float(c)
-            for b in bundles.values()
-            for c in np.asarray(b.classes_).ravel()
-        }
-    )
+    master_classes = sorted({float(c) for b in bundles.values() for c in np.asarray(b.classes_).ravel()})
     if not master_classes:
         raise ValueError("routed predict: no classes_ found on regime bundles")
 
@@ -578,9 +542,7 @@ def cmd_importance(args: argparse.Namespace) -> None:
         sample_weight=sw,
     )
     gain = xgb_importance_table(clf, feature_names=list(X.columns))
-    perm = permutation_importance_table(
-        clf, X, y, n_repeats=int(cfg.get("importance_repeats", 5)), random_state=seed
-    )
+    perm = permutation_importance_table(clf, X, y, n_repeats=int(cfg.get("importance_repeats", 5)), random_state=seed)
     out_dir = Path(cfg["model"].get("out_dir", "outputs/ml"))
     out_dir.mkdir(parents=True, exist_ok=True)
     gain.to_csv(out_dir / "importance_gain.csv", index=False)
@@ -610,9 +572,7 @@ def _wf_tune_grid_from_yaml(wf: dict[str, Any]) -> list[dict[str, Any]]:
         return out
     if isinstance(raw, dict):
         return expand_grid(raw)
-    raise ValueError(
-        f"wf_tuner.grid must be a list or dict, got {type(raw).__name__}"
-    )
+    raise ValueError(f"wf_tuner.grid must be a list or dict, got {type(raw).__name__}")
 
 
 def cmd_wf_tune(args: argparse.Namespace) -> None:
@@ -674,9 +634,7 @@ def cmd_walk_forward(args: argparse.Namespace) -> None:
             "test_end": int(te[-1]),
             "train_size": int(tr.size),
             "test_size": int(te.size),
-            "test_return": float(
-                (float(df.iloc[te[-1]]["close"]) / float(df.iloc[te[0]]["close"])) - 1.0
-            ),
+            "test_return": float((float(df.iloc[te[-1]]["close"]) / float(df.iloc[te[0]]["close"])) - 1.0),
         }
         for i, (tr, te) in enumerate(splits)
     ]
@@ -718,9 +676,7 @@ def cmd_shap(args: argparse.Namespace) -> None:
 
         idx_path = model_dir / "regime_index.json"
         if not idx_path.is_file():
-            raise ValueError(
-                "--per-regime requires regime_index.json (train with regime.groupby: true)"
-            )
+            raise ValueError("--per-regime requires regime_index.json (train with regime.groupby: true)")
         idx = json.loads(idx_path.read_text(encoding="utf-8"))
         bundles = load_regime_bundles_shap(model_dir)
         first_k = next(iter(idx["buckets"]))
@@ -731,9 +687,7 @@ def cmd_shap(args: argparse.Namespace) -> None:
         cfg_inf = _cfg_for_inference(cfg, ref)
         X, _y, _t0, _t1, _task = _prepare_xy(cfg_inf, symbol=str(sym))
         if "vol_regime" not in X.columns:
-            raise ValueError(
-                "--per-regime needs vol_regime in the feature matrix (enable regime in YAML / meta)"
-            )
+            raise ValueError("--per-regime needs vol_regime in the feature matrix (enable regime in YAML / meta)")
         keys = _regime_bucket_key_series(X["vol_regime"], idx)
         X_by: dict[str, pd.DataFrame] = {}
         for k in bundles:

@@ -11,7 +11,6 @@ import numpy as np
 
 def overlap_count_matrix(t0: np.ndarray, t1: np.ndarray) -> np.ndarray:
     """``M[i,j] = 1`` if intervals ``[t0_i,t1_i]`` and ``[t0_j,t1_j]`` overlap (inclusive)."""
-    n = len(t0)
     t0i = t0.reshape(-1, 1)
     t1i = t1.reshape(-1, 1)
     t0j = t0.reshape(1, -1)

@@ -49,13 +49,9 @@ def align_timeframes(
         hdf = tf_df.copy()
         hdf.set_index("datetime", inplace=True)
         if not hdf.index.is_unique:
-            raise ValueError(
-                f"align_timeframes: higher_dfs[{tf_label!r}] has duplicate datetimes"
-            )
+            raise ValueError(f"align_timeframes: higher_dfs[{tf_label!r}] has duplicate datetimes")
         if not hdf.index.is_monotonic_increasing:
-            raise ValueError(
-                f"align_timeframes: higher_dfs[{tf_label!r}].datetime is not sorted ascending"
-            )
+            raise ValueError(f"align_timeframes: higher_dfs[{tf_label!r}].datetime is not sorted ascending")
 
         if signal_cols is None:
             cols = [c for c in hdf.columns if c.endswith("_bull") or c.endswith("_bear")]

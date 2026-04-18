@@ -188,6 +188,12 @@ The full suite currently reports **184 collected tests** (183 pass, 1 skipped wh
 
 ### 6.1 Running the suite
 
+Default `uv run pytest tests/` enables **coverage** for `aprilalgo` and **fails under 55%** total line coverage (`pyproject.toml`). For a faster loop:
+
+```bash
+uv run pytest tests/ --no-cov
+```
+
 ```bash
 uv run pytest tests/ -v                      # full suite, verbose
 uv run pytest tests/ -q                      # quick green/red summary
@@ -196,7 +202,7 @@ uv run pytest tests/ -x                      # stop at first failure
 uv run pytest tests/ -rs                     # show reasons for skips
 uv run pytest tests/ --lf                    # rerun only last-failed
 uv run pytest tests/ --ff                    # run last-failed first, then the rest
-uv run pytest tests/ --cov=aprilalgo         # coverage report (needs pytest-cov)
+uv run pytest tests/ --cov=aprilalgo         # coverage (default unless --no-cov)
 uv run pytest tests/ -n auto                 # parallel (needs pytest-xdist)
 ```
 
@@ -246,6 +252,23 @@ uv run pytest tests/test_cli_ml.py::test_cli_train_predict_roundtrip -v
 ```bash
 uv sync --extra hmm                                 # install hmmlearn (when wheels exist for your Python)
 uv run pytest tests/ -k hmm -v                      # run the HMM smoke path (otherwise skipped)
+```
+
+### 6.5 Static analysis (local / CI)
+
+```bash
+uv run ruff check src tests
+uv run ruff format src tests --check
+uv run mypy src/aprilalgo
+uv run bandit -r src -q
+```
+
+Dependency audit (no `uv audit` subcommand; export then audit the tree):
+
+```bash
+uv export --no-dev --no-annotate --no-hashes -o requirements-audit.txt
+uv tool run pip-audit -r requirements-audit.txt
+del requirements-audit.txt   # Windows; or rm on Unix — do not commit this file
 ```
 
 ---

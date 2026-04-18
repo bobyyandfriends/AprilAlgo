@@ -66,10 +66,7 @@ def prepare_xy(
     )
 
     task: Task = cfg.get("task", "binary")
-    if task == "binary":
-        y = targets["label_binary"]
-    else:
-        y = targets["label_multiclass"]
+    y = targets["label_binary"] if task == "binary" else targets["label_multiclass"]
 
     X = build_feature_matrix(df, indicator_config=cfg["indicators"])
     X = X.reset_index(drop=True)
@@ -111,9 +108,7 @@ def xgb_estimator_factory(cfg: dict[str, Any], task: Task) -> Callable[[], Any]:
     return factory
 
 
-def weights_for_training(
-    cfg: dict[str, Any], t0: np.ndarray, t1: np.ndarray
-) -> np.ndarray | None:
+def weights_for_training(cfg: dict[str, Any], t0: np.ndarray, t1: np.ndarray) -> np.ndarray | None:
     """Resolve per-row ``sample_weight`` from ``cfg['sampling']``.
 
     * ``strategy: none`` (or omitted) → return ``None`` so estimators fall back
@@ -143,9 +138,7 @@ def weights_for_training(
         if tot <= 0.0:
             return np.ones(n, dtype=np.float64)
         return counts * (n / tot)
-    raise ValueError(
-        f"Unknown sampling.strategy: {strategy!r} (expected none, uniqueness, or bootstrap)"
-    )
+    raise ValueError(f"Unknown sampling.strategy: {strategy!r} (expected none, uniqueness, or bootstrap)")
 
 
 __all__ = [

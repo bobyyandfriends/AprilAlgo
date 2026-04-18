@@ -189,10 +189,7 @@ def _sidebar_controls(
         "n_bars": int(n_bars),
         "selected": selected,
         "overlays_selected": overlays_selected[:_MAX_OVERLAYS],
-        "panels_selected": [
-            s for s in selected
-            if not catalog[s].overlay and s not in _ML_PSEUDO
-        ],
+        "panels_selected": [s for s in selected if not catalog[s].overlay and s not in _ML_PSEUDO],
         "ind_params": ind_params,
         "show_confluence": show_confluence,
         "model_dir": selected_model,
@@ -366,9 +363,7 @@ def _render_tab_ml(
         mode="stacked" if stacked_view else "area",
     )
     if show_price_shading:
-        shade_price_band_by_proba(
-            fig, df, proba, price_row=1, threshold=threshold, max_spans=40
-        )
+        shade_price_band_by_proba(fig, df, proba, price_row=1, threshold=threshold, max_spans=40)
     st.plotly_chart(fig, use_container_width=True, config=streamlit_chart_config())
 
 
@@ -445,9 +440,7 @@ def _render_tab_shap(
                 hover_event=False,
                 override_height=fig.layout.height,
             )
-            selected_dt = (
-                pd.Timestamp(events[0]["x"]) if events and "x" in events[0] else None
-            )
+            selected_dt = pd.Timestamp(events[0]["x"]) if events and "x" in events[0] else None
         except ImportError:
             st.plotly_chart(fig, use_container_width=True, config=streamlit_chart_config())
             dt_options = df["datetime"].dt.strftime("%Y-%m-%d %H:%M").tolist()
@@ -523,9 +516,7 @@ def render() -> None:
             int(df_view["datetime"].iloc[0].value) if len(df_view) else 0,
             int(df_view["datetime"].iloc[-1].value) if len(df_view) else 0,
         )
-        proba_frame = build_proba_frame_for_df(
-            ctrl["model_dir"], df_len=len(df_view), df_signature=sig
-        )
+        proba_frame = build_proba_frame_for_df(ctrl["model_dir"], df_len=len(df_view), df_signature=sig)
 
         try:
             bundle = load_bundle(ctrl["model_dir"])
@@ -556,9 +547,7 @@ def render() -> None:
     include_ml = "ml_proba" in ctrl["selected"] and ctrl["model_dir"] is not None
     include_shap = "shap_local" in ctrl["selected"] and ctrl["model_dir"] is not None
 
-    tab_price, tab_ml, tab_shap = st.tabs(
-        ["Price & DeMark", "ML Overlay", "SHAP Explainer"]
-    )
+    tab_price, tab_ml, tab_shap = st.tabs(["Price & DeMark", "ML Overlay", "SHAP Explainer"])
 
     with tab_price:
         _render_tab_price(
@@ -584,13 +573,9 @@ def render() -> None:
             threshold = float(mp.get("threshold", 0.55))
             col_a, col_b = st.columns([1, 1])
             with col_a:
-                stacked_view = st.checkbox(
-                    "Stacked multi-class view", value=False, key="ml_stacked_view"
-                )
+                stacked_view = st.checkbox("Stacked multi-class view", value=False, key="ml_stacked_view")
             with col_b:
-                show_price_shading = st.checkbox(
-                    "Shade price band above threshold", value=True, key="ml_price_shade"
-                )
+                show_price_shading = st.checkbox("Shade price band above threshold", value=True, key="ml_price_shade")
             _render_tab_ml(
                 df_view,
                 symbol=ctrl["symbol"],

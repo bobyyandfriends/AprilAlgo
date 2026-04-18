@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-import subprocess
+import subprocess  # nosec B404  # trusted local operator-driven CLI from Streamlit UI
 import sys
 from pathlib import Path
 
@@ -38,7 +38,7 @@ def render() -> None:
         if st.button("Show splits"):
             cmd = [sys.executable, "-m", "aprilalgo.cli", "walk-forward", "--config", cfg]
             try:
-                proc = subprocess.run(
+                proc = subprocess.run(  # nosec B603  # trusted local operator-driven CLI from Streamlit UI
                     cmd,
                     cwd=_PROJECT_ROOT,
                     capture_output=True,
@@ -48,8 +48,7 @@ def render() -> None:
                 )
             except subprocess.TimeoutExpired as e:
                 st.error(
-                    f"walk-forward CLI timed out after {_CLI_TIMEOUT_SECONDS}s.\n"
-                    f"Partial stdout:\n{e.stdout or ''}"
+                    f"walk-forward CLI timed out after {_CLI_TIMEOUT_SECONDS}s.\nPartial stdout:\n{e.stdout or ''}"
                 )
                 return
             st.code(proc.stdout or proc.stderr or "(empty)", language="json")
@@ -98,10 +97,7 @@ def render() -> None:
             df = pd.read_csv(discover)
             st.caption(f"Loaded `{discover.relative_to(_PROJECT_ROOT)}`")
         else:
-            st.info(
-                "No `wf_tune_results.csv` under the model path above. "
-                "Run **wf-tune** or upload a CSV."
-            )
+            st.info("No `wf_tune_results.csv` under the model path above. Run **wf-tune** or upload a CSV.")
 
         if df is not None and not df.empty:
             st.dataframe(df, use_container_width=True)

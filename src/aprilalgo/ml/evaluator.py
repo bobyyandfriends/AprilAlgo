@@ -5,7 +5,8 @@ Uses :class:`aprilalgo.ml.cv.PurgedKFold` with per-row ``t0`` / ``t1``.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -65,9 +66,7 @@ def purged_cv_evaluate(
     else:
         sw_arr = np.asarray(sample_weight, dtype=np.float64)
         if sw_arr.shape[0] != y_arr.shape[0]:
-            raise ValueError(
-                f"sample_weight length {sw_arr.shape[0]} does not match y length {y_arr.shape[0]}"
-            )
+            raise ValueError(f"sample_weight length {sw_arr.shape[0]} does not match y length {y_arr.shape[0]}")
     uniq_all = np.unique(y_arr)
     # sklearn warns if ``labels`` has length 1; for degenerate binary data use a 0/1 axis.
     if len(uniq_all) == 1 and float(uniq_all[0]) in (0.0, 1.0):
@@ -77,9 +76,7 @@ def purged_cv_evaluate(
     pkf = PurgedKFold(n_splits=n_splits, embargo=embargo)
     folds: list[dict[str, Any]] = []
 
-    for train_idx, test_idx in pkf.split(
-        X, y=y_arr, sample_t0=t0, sample_t1=t1
-    ):
+    for train_idx, test_idx in pkf.split(X, y=y_arr, sample_t0=t0, sample_t1=t1):
         X_tr = X.iloc[train_idx]
         X_te = X.iloc[test_idx]
         y_tr = y_arr[train_idx]
@@ -100,35 +97,23 @@ def purged_cv_evaluate(
             "accuracy": float(accuracy_score(y_te, pred)),
         }
         if n_classes > 2:
-            fold_metrics["f1_macro"] = float(
-                f1_score(y_te, pred, average="macro", zero_division=0)
-            )
-            fold_metrics["f1_weighted"] = float(
-                f1_score(y_te, pred, average="weighted", zero_division=0)
-            )
+            fold_metrics["f1_macro"] = float(f1_score(y_te, pred, average="macro", zero_division=0))
+            fold_metrics["f1_weighted"] = float(f1_score(y_te, pred, average="weighted", zero_division=0))
             try:
                 proba = est.predict_proba(X_te)
                 if len(y_te_uniq) >= 2:
-                    fold_metrics["log_loss"] = float(
-                        log_loss(y_te, proba, labels=label_universe)
-                    )
+                    fold_metrics["log_loss"] = float(log_loss(y_te, proba, labels=label_universe))
                 else:
                     fold_metrics["log_loss"] = None
             except Exception:
                 fold_metrics["log_loss"] = None
         else:
-            fold_metrics["f1"] = float(
-                f1_score(y_te, pred, average="binary", zero_division=0)
-            )
+            fold_metrics["f1"] = float(f1_score(y_te, pred, average="binary", zero_division=0))
             # If the training fold saw only one class, ``est.classes_`` has length 1
             # and ``predict_proba(...)[:, 1]`` would raise IndexError. Skip proba-based
             # metrics explicitly so we don't swallow unrelated errors via bare except.
             train_classes = np.unique(y_tr)
-            if (
-                len(train_classes) < 2
-                or not hasattr(est, "predict_proba")
-                or len(y_te_uniq) < 2
-            ):
+            if len(train_classes) < 2 or not hasattr(est, "predict_proba") or len(y_te_uniq) < 2:
                 fold_metrics["roc_auc"] = None
                 fold_metrics["log_loss"] = None
             else:
@@ -138,16 +123,12 @@ def purged_cv_evaluate(
                     # trained on 2+ classes, so indexing [:, 1] is safe here.
                     proba = proba_full[:, 1]
                     fold_metrics["roc_auc"] = _safe_roc_auc(y_te, proba)
-                    fold_metrics["log_loss"] = float(
-                        log_loss(y_te, proba, labels=label_universe)
-                    )
+                    fold_metrics["log_loss"] = float(log_loss(y_te, proba, labels=label_universe))
                 except (ValueError, IndexError):
                     fold_metrics["roc_auc"] = None
                     fold_metrics["log_loss"] = None
 
-        fold_metrics["confusion_matrix"] = confusion_matrix(
-            y_te, pred, labels=label_universe
-        ).tolist()
+        fold_metrics["confusion_matrix"] = confusion_matrix(y_te, pred, labels=label_universe).tolist()
         folds.append(fold_metrics)
 
     if not folds:
@@ -159,19 +140,13 @@ def purged_cv_evaluate(
         }
 
     # aggregate means for numeric scalar keys
-    keys = [
-        k
-        for k in folds[0]
-        if k != "confusion_matrix" and isinstance(folds[0][k], (int, float))
-    ]
+    keys = [k for k in folds[0] if k != "confusion_matrix" and isinstance(folds[0][k], (int, float))]
     mean: dict[str, float] = {}
     for k in keys:
         vals = [float(f[k]) for f in folds if f.get(k) is not None]
         if vals:
             mean[k] = float(np.mean(vals))
-    folds_df = pd.DataFrame(
-        [{k: v for k, v in f.items() if k != "confusion_matrix"} for f in folds]
-    )
+    folds_df = pd.DataFrame([{k: v for k, v in f.items() if k != "confusion_matrix"} for f in folds])
     return {
         "folds": folds,
         "folds_df": folds_df,

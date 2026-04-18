@@ -136,10 +136,7 @@ def build_figure(
 
     if layout.include_volume and "volume" in df.columns:
         vol_row = row_index_for(layout, "volume")
-        vol_colors = [
-            "#26a69a" if df["close"].iloc[i] >= df["open"].iloc[i] else "#ef5350"
-            for i in range(len(df))
-        ]
+        vol_colors = ["#26a69a" if df["close"].iloc[i] >= df["open"].iloc[i] else "#ef5350" for i in range(len(df))]
         fig.add_trace(
             go.Bar(
                 x=df["datetime"],
@@ -155,9 +152,7 @@ def build_figure(
 
     if layout.include_confluence and "confluence_net" in df.columns:
         conf_row = row_index_for(layout, "confluence")
-        conf_colors = [
-            "#26a69a" if v >= 0 else "#ef5350" for v in df["confluence_net"].fillna(0)
-        ]
+        conf_colors = ["#26a69a" if v >= 0 else "#ef5350" for v in df["confluence_net"].fillna(0)]
         fig.add_trace(
             go.Bar(
                 x=df["datetime"],
@@ -169,9 +164,7 @@ def build_figure(
             row=conf_row,
             col=1,
         )
-        fig.add_hline(
-            y=0, line_color="rgba(255,255,255,0.4)", line_width=0.5, row=conf_row, col=1
-        )
+        fig.add_hline(y=0, line_color="rgba(255,255,255,0.4)", line_width=0.5, row=conf_row, col=1)
 
     apply_layout(
         fig,

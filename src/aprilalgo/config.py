@@ -18,7 +18,7 @@ def load_config(path: str | Path | None = None) -> dict:
     fpath = Path(path) if path else _DEFAULT_CONFIG
     if not fpath.exists():
         return _defaults()
-    with open(fpath, "r") as f:
+    with open(fpath) as f:
         cfg = yaml.safe_load(f) or {}
     merged = _defaults()
     merged.update(cfg)

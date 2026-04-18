@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import streamlit as st
 
-from aprilalgo.data import load_price_data
 from aprilalgo.backtest import run_backtest
-from aprilalgo.strategies import STRATEGIES
+from aprilalgo.data import load_price_data
 from aprilalgo.indicators.descriptor import get_catalog
-from aprilalgo.ui.helpers import discover_symbols, format_metric, METRIC_DISPLAY_NAMES
+from aprilalgo.strategies import STRATEGIES
+from aprilalgo.ui.helpers import METRIC_DISPLAY_NAMES, discover_symbols, format_metric
 
 
 def render() -> None:
@@ -24,13 +24,19 @@ def render() -> None:
     with st.sidebar:
         st.subheader("Backtest Settings")
         timeframes = list(available.keys())
-        tf = st.selectbox("Timeframe", timeframes,
-                          index=timeframes.index("daily") if "daily" in timeframes else 0,
-                          key="dash_tf")
+        tf = st.selectbox(
+            "Timeframe",
+            timeframes,
+            index=timeframes.index("daily") if "daily" in timeframes else 0,
+            key="dash_tf",
+        )
         symbols = available.get(tf, [])
-        symbol = st.selectbox("Symbol", symbols,
-                              index=symbols.index("AAPL") if "AAPL" in symbols else 0,
-                              key="dash_sym")
+        symbol = st.selectbox(
+            "Symbol",
+            symbols,
+            index=symbols.index("AAPL") if "AAPL" in symbols else 0,
+            key="dash_sym",
+        )
 
         strategy_name = st.selectbox("Strategy", list(STRATEGIES.keys()), key="dash_strat")
         capital = st.number_input("Initial Capital ($)", value=100_000, step=10_000, key="dash_cap")
@@ -74,14 +80,24 @@ def render() -> None:
     st.subheader("Equity Curve")
     if not equity_df.empty and "time" in equity_df.columns:
         fig_eq = go.Figure()
-        fig_eq.add_trace(go.Scatter(
-            x=equity_df["time"], y=equity_df["equity"], mode="lines", name="Equity",
-            line=dict(color="#42a5f5", width=2),
-            fill="tozeroy", fillcolor="rgba(66,165,245,0.1)",
-        ))
+        fig_eq.add_trace(
+            go.Scatter(
+                x=equity_df["time"],
+                y=equity_df["equity"],
+                mode="lines",
+                name="Equity",
+                line=dict(color="#42a5f5", width=2),
+                fill="tozeroy",
+                fillcolor="rgba(66,165,245,0.1)",
+            )
+        )
         fig_eq.add_hline(y=capital, line_dash="dash", line_color="rgba(255,255,255,0.3)")
-        fig_eq.update_layout(template="plotly_dark", height=350,
-                             margin=dict(l=60, r=30, t=20, b=30), yaxis_title="Equity ($)")
+        fig_eq.update_layout(
+            template="plotly_dark",
+            height=350,
+            margin=dict(l=60, r=30, t=20, b=30),
+            yaxis_title="Equity ($)",
+        )
         st.plotly_chart(fig_eq, use_container_width=True)
     else:
         st.info("No equity data to display.")
@@ -90,23 +106,54 @@ def render() -> None:
     st.subheader("Trades on Chart")
     if not trades_df.empty:
         fig_t = go.Figure()
-        fig_t.add_trace(go.Candlestick(
-            x=df["datetime"], open=df["open"], high=df["high"],
-            low=df["low"], close=df["close"], name="Price",
-            increasing_line_color="#26a69a", decreasing_line_color="#ef5350",
-        ))
+        fig_t.add_trace(
+            go.Candlestick(
+                x=df["datetime"],
+                open=df["open"],
+                high=df["high"],
+                low=df["low"],
+                close=df["close"],
+                name="Price",
+                increasing_line_color="#26a69a",
+                decreasing_line_color="#ef5350",
+            )
+        )
         entries = trades_df[trades_df["entry_time"].notna()]
         exits = trades_df[trades_df["exit_time"].notna()]
-        fig_t.add_trace(go.Scatter(
-            x=entries["entry_time"], y=entries["entry_price"], mode="markers", name="Buy",
-            marker=dict(symbol="triangle-up", size=12, color="#26a69a", line=dict(width=1, color="white")),
-        ))
-        fig_t.add_trace(go.Scatter(
-            x=exits["exit_time"], y=exits["exit_price"], mode="markers", name="Sell",
-            marker=dict(symbol="triangle-down", size=12, color="#ef5350", line=dict(width=1, color="white")),
-        ))
-        fig_t.update_layout(template="plotly_dark", height=400,
-                            margin=dict(l=60, r=30, t=20, b=30), xaxis_rangeslider_visible=False)
+        fig_t.add_trace(
+            go.Scatter(
+                x=entries["entry_time"],
+                y=entries["entry_price"],
+                mode="markers",
+                name="Buy",
+                marker=dict(
+                    symbol="triangle-up",
+                    size=12,
+                    color="#26a69a",
+                    line=dict(width=1, color="white"),
+                ),
+            )
+        )
+        fig_t.add_trace(
+            go.Scatter(
+                x=exits["exit_time"],
+                y=exits["exit_price"],
+                mode="markers",
+                name="Sell",
+                marker=dict(
+                    symbol="triangle-down",
+                    size=12,
+                    color="#ef5350",
+                    line=dict(width=1, color="white"),
+                ),
+            )
+        )
+        fig_t.update_layout(
+            template="plotly_dark",
+            height=400,
+            margin=dict(l=60, r=30, t=20, b=30),
+            xaxis_rangeslider_visible=False,
+        )
         st.plotly_chart(fig_t, use_container_width=True)
 
     # --- trade log ---
@@ -164,11 +211,21 @@ def _strategy_params(strategy_name: str) -> dict:
                 if isinstance(p.default, float):
                     cfg[p.name] = st.slider(
                         f"{spec.display_name} — {p.display_name}",
-                        float(p.min_val), float(p.max_val), float(p.default), float(p.step), key=key)
+                        float(p.min_val),
+                        float(p.max_val),
+                        float(p.default),
+                        float(p.step),
+                        key=key,
+                    )
                 else:
                     cfg[p.name] = st.slider(
                         f"{spec.display_name} — {p.display_name}",
-                        int(p.min_val), int(p.max_val), int(p.default), int(p.step), key=key)
+                        int(p.min_val),
+                        int(p.max_val),
+                        int(p.default),
+                        int(p.step),
+                        key=key,
+                    )
             indicators.append(cfg)
 
         params["indicators"] = indicators

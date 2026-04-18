@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **QA / doc baseline (2026-04-18)** — `BUG_REPORT.md` (test + static-analysis summary, `AUDIT_FINDINGS.md` reconciliation) and `DOC_ALIGNMENT.md` (stale roadmap vs `PROJECT_STATE.md`, handoff surfaces). Dev tooling in `pyproject.toml`: `pytest` default adds `--cov=aprilalgo` + `--cov-fail-under=55`, `ruff`, `mypy` (+ `pandas-stubs`), `bandit`. `AGENTS.md` §6 documents default coverage, `--no-cov`, and §6.5 lint/type/security/pip-audit commands. Direct dependency **`pillow>=12.2.0`** fixes **CVE-2026-40192** (pip-audit).
+
 ### Changed
 - **Documentation consolidation (post-v0.5 audit, 2026-04-18)** — reduced markdown from 17 → 11 files so a normal coding session updates only two (`PROJECT_STATE.md` + `CHANGELOG.md`). New unified **`AGENTS.md`** absorbs `CLAUDE.md` structural content, `COMMAND_CHEAT_SHEET.md`, `docs/MODEL_ROUTING.md`, the end-of-session handoff protocol from `docs/SESSION_HANDOFF.md`, and a new §6 "Testing" section (catalog of 28 test files, pytest invocations, optional `hmm` extra). **`CLAUDE.md`** slimmed to a thin pointer → `AGENTS.md`. **`PROJECT_STATE.md`** rewritten lean (§1 status, §2 today's handoff, §3 next sprint, §4 warning zone seeded from `AUDIT_FINDINGS.md` §B, §5 operational contracts, §6 open questions, Appendix A collapsed sprint log, Appendix B CLI edge cases absorbed from `DEBUG_LOG.md`). **`ARCHITECTURE.md`** §2 "Versioned Roadmap" trimmed — shipped per-sprint history deferred to `CHANGELOG.md`, kept forward-looking v0.6+ themes only. **`README.md`** doc links repointed. **`.cursorrules`** now references `AGENTS.md` §7 for model routing. `docs/LEARNING.md` and `docs/REPO_ANALYSIS.md` moved to `docs/archive/`. Deleted: `BACKLOG.md`, `COMMAND_CHEAT_SHEET.md`, `DEBUG_LOG.md`, `tests.md`, `docs/SESSION_HANDOFF.md`, `docs/MODEL_ROUTING.md`.
 

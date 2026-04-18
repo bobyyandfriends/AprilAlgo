@@ -30,9 +30,7 @@ def render() -> None:
 
     enriched = add_vol_regime(df, window=window, n_buckets=buckets)
     fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(x=df["datetime"], y=df["close"], name="close", yaxis="y")
-    )
+    fig.add_trace(go.Scatter(x=df["datetime"], y=df["close"], name="close", yaxis="y"))
     fig.add_trace(
         go.Scatter(
             x=enriched["datetime"],

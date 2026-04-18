@@ -6,7 +6,7 @@ Yields increasing train windows and forward test blocks — combine with
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 import pandas as pd
@@ -38,13 +38,17 @@ def walk_forward_splits(
     auto_sized = test_size is None
     if auto_sized:
         # Ceiling division so *n_folds* auto-sized windows cover the tail.
-        test_size = max(1, -(-(n - min_train) // n_folds))
+        test_size_eff: int = max(1, -(-(n - min_train) // n_folds))
+    else:
+        if test_size is None:
+            raise ValueError("test_size must be set when relying on explicit window sizing")
+        test_size_eff = test_size
     start_test = min_train
     emitted = 0
     while start_test < n:
         if auto_sized and emitted >= n_folds:
             break
-        end_test = min(start_test + test_size, n)
+        end_test = min(start_test + test_size_eff, n)
         train_idx = np.arange(0, start_test, dtype=np.int64)
         test_idx = np.arange(start_test, end_test, dtype=np.int64)
         if test_idx.size == 0:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from aprilalgo.backtest.portfolio import Portfolio
 from aprilalgo.backtest.metrics import calculate_metrics
+from aprilalgo.backtest.portfolio import Portfolio
 from aprilalgo.strategies.base import BaseStrategy
 
 

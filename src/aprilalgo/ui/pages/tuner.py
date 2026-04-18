@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import streamlit as st
 import pandas as pd
 import plotly.express as px
+import streamlit as st
 
 from aprilalgo.data import load_price_data
 from aprilalgo.strategies import STRATEGIES
 from aprilalgo.tuner import ParameterGrid, TunerRunner, analyze_results
-from aprilalgo.indicators.descriptor import get_catalog
-from aprilalgo.ui.helpers import discover_symbols, format_metric, METRIC_DISPLAY_NAMES
+from aprilalgo.ui.helpers import METRIC_DISPLAY_NAMES, discover_symbols, format_metric
 
 
 def render() -> None:
@@ -24,21 +23,28 @@ def render() -> None:
     with st.sidebar:
         st.subheader("Tuner Settings")
         timeframes = list(available.keys())
-        tf = st.selectbox("Timeframe", timeframes,
-                          index=timeframes.index("daily") if "daily" in timeframes else 0,
-                          key="tune_tf")
+        tf = st.selectbox(
+            "Timeframe",
+            timeframes,
+            index=timeframes.index("daily") if "daily" in timeframes else 0,
+            key="tune_tf",
+        )
         symbols = available.get(tf, [])
-        symbol = st.selectbox("Symbol", symbols,
-                              index=symbols.index("AAPL") if "AAPL" in symbols else 0,
-                              key="tune_sym")
+        symbol = st.selectbox(
+            "Symbol",
+            symbols,
+            index=symbols.index("AAPL") if "AAPL" in symbols else 0,
+            key="tune_sym",
+        )
 
-        strategy_name = st.selectbox("Strategy",
-                                     [k for k in STRATEGIES if k != "configurable"],
-                                     key="tune_strat")
-        optimize_metric = st.selectbox("Optimize For", list(METRIC_DISPLAY_NAMES.keys()),
-                                       format_func=lambda k: METRIC_DISPLAY_NAMES[k],
-                                       index=list(METRIC_DISPLAY_NAMES.keys()).index("sharpe_ratio"),
-                                       key="tune_metric")
+        strategy_name = st.selectbox("Strategy", [k for k in STRATEGIES if k != "configurable"], key="tune_strat")
+        optimize_metric = st.selectbox(
+            "Optimize For",
+            list(METRIC_DISPLAY_NAMES.keys()),
+            format_func=lambda k: METRIC_DISPLAY_NAMES[k],
+            index=list(METRIC_DISPLAY_NAMES.keys()).index("sharpe_ratio"),
+            key="tune_metric",
+        )
 
     st.subheader("Parameter Ranges")
     st.caption("Define the values to sweep. The tuner will test every combination.")
@@ -48,37 +54,36 @@ def render() -> None:
     if strategy_name == "rsi_sma":
         col1, col2 = st.columns(2)
         with col1:
-            rsi_vals = st.multiselect("RSI Period", [8, 10, 12, 14, 16, 18, 20],
-                                      default=[12, 14, 16], key="t_rsi")
-            rsi_buy_vals = st.multiselect("RSI Buy", [20, 25, 30, 35, 40],
-                                          default=[25, 30, 35], key="t_rsib")
+            rsi_vals = st.multiselect("RSI Period", [8, 10, 12, 14, 16, 18, 20], default=[12, 14, 16], key="t_rsi")
+            rsi_buy_vals = st.multiselect("RSI Buy", [20, 25, 30, 35, 40], default=[25, 30, 35], key="t_rsib")
         with col2:
-            sma_vals = st.multiselect("SMA Period", [10, 15, 20, 30, 50, 100, 150, 200],
-                                      default=[20, 50], key="t_sma")
-            rsi_sell_vals = st.multiselect("RSI Sell", [60, 65, 70, 75, 80],
-                                           default=[65, 70, 75], key="t_rsis")
+            sma_vals = st.multiselect("SMA Period", [10, 15, 20, 30, 50, 100, 150, 200], default=[20, 50], key="t_sma")
+            rsi_sell_vals = st.multiselect("RSI Sell", [60, 65, 70, 75, 80], default=[65, 70, 75], key="t_rsis")
         if rsi_vals:
-            grid.add("rsi", rsi_period=rsi_vals, rsi_buy=rsi_buy_vals or [30],
-                     rsi_sell=rsi_sell_vals or [70])
+            grid.add(
+                "rsi",
+                rsi_period=rsi_vals,
+                rsi_buy=rsi_buy_vals or [30],
+                rsi_sell=rsi_sell_vals or [70],
+            )
         if sma_vals:
             grid.add("sma", sma_period=sma_vals)
 
     elif strategy_name == "demark_confluence":
         col1, col2 = st.columns(2)
         with col1:
-            rsi_vals = st.multiselect("RSI Period", [10, 12, 14, 16],
-                                      default=[14], key="t_dm_rsi")
-            sma_vals = st.multiselect("SMA Period", [15, 20, 30, 50, 100],
-                                      default=[20, 50], key="t_dm_sma")
-            bb_vals = st.multiselect("BB Period", [10, 15, 20, 25],
-                                     default=[20], key="t_dm_bb")
+            rsi_vals = st.multiselect("RSI Period", [10, 12, 14, 16], default=[14], key="t_dm_rsi")
+            sma_vals = st.multiselect("SMA Period", [15, 20, 30, 50, 100], default=[20, 50], key="t_dm_sma")
+            bb_vals = st.multiselect("BB Period", [10, 15, 20, 25], default=[20], key="t_dm_bb")
         with col2:
-            ss_vals = st.multiselect("SS Period", [5, 8, 10, 15, 20],
-                                     default=[10], key="t_dm_ss")
-            ct_vals = st.multiselect("Conf Threshold", [0.1, 0.15, 0.2, 0.25, 0.3, 0.4],
-                                     default=[0.1, 0.2, 0.3], key="t_dm_ct")
-            sl_vals = st.multiselect("Stop Loss %", [0.02, 0.03, 0.05, 0.07],
-                                     default=[0.03, 0.05], key="t_dm_sl")
+            ss_vals = st.multiselect("SS Period", [5, 8, 10, 15, 20], default=[10], key="t_dm_ss")
+            ct_vals = st.multiselect(
+                "Conf Threshold",
+                [0.1, 0.15, 0.2, 0.25, 0.3, 0.4],
+                default=[0.1, 0.2, 0.3],
+                key="t_dm_ct",
+            )
+            sl_vals = st.multiselect("Stop Loss %", [0.02, 0.03, 0.05, 0.07], default=[0.03, 0.05], key="t_dm_sl")
         if rsi_vals:
             grid.add("rsi", rsi_period=rsi_vals)
         if sma_vals:
@@ -164,32 +169,40 @@ def render() -> None:
 
     # --- scatter ---
     st.subheader("Parameter Impact")
-    numeric_params = [c for c in results_df.columns
-                      if c not in list(METRIC_DISPLAY_NAMES.keys()) + ["combo_id", "error"]
-                      and pd.api.types.is_numeric_dtype(results_df[c])]
+    numeric_params = [
+        c
+        for c in results_df.columns
+        if c not in list(METRIC_DISPLAY_NAMES.keys()) + ["combo_id", "error"]
+        and pd.api.types.is_numeric_dtype(results_df[c])
+    ]
 
     if len(numeric_params) >= 2:
         c1, c2 = st.columns(2)
         with c1:
             x_param = st.selectbox("X axis", numeric_params, index=0, key="tune_x")
         with c2:
-            y_param = st.selectbox("Y axis", numeric_params,
-                                   index=min(1, len(numeric_params) - 1), key="tune_y")
+            y_param = st.selectbox("Y axis", numeric_params, index=min(1, len(numeric_params) - 1), key="tune_y")
         fig = px.scatter(
             results_df.dropna(subset=[optimize_metric]),
-            x=x_param, y=y_param, color=optimize_metric,
+            x=x_param,
+            y=y_param,
+            color=optimize_metric,
             size=results_df[optimize_metric].clip(lower=0).fillna(0) + 0.01,
             color_continuous_scale="RdYlGn",
             hover_data=[c for c in METRIC_DISPLAY_NAMES if c in results_df.columns],
-            template="plotly_dark", height=450,
+            template="plotly_dark",
+            height=450,
         )
         fig.update_layout(margin=dict(l=60, r=30, t=20, b=30))
         st.plotly_chart(fig, use_container_width=True)
     elif len(numeric_params) == 1:
         fig = px.bar(
             results_df.dropna(subset=[optimize_metric]).sort_values(optimize_metric, ascending=False),
-            x=numeric_params[0], y=optimize_metric,
-            color=optimize_metric, color_continuous_scale="RdYlGn",
-            template="plotly_dark", height=350,
+            x=numeric_params[0],
+            y=optimize_metric,
+            color=optimize_metric,
+            color_continuous_scale="RdYlGn",
+            template="plotly_dark",
+            height=350,
         )
         st.plotly_chart(fig, use_container_width=True)

@@ -46,12 +46,26 @@ def _check_robustness(
 
     A robust result means small parameter changes don't destroy performance.
     """
-    param_cols = [c for c in df.columns if c not in [
-        "combo_id", "error", metric,
-        "total_pnl", "total_return_pct", "num_trades", "win_rate_pct",
-        "avg_win", "avg_loss", "profit_factor", "max_drawdown_pct",
-        "sharpe_ratio", "sortino_ratio",
-    ]]
+    param_cols = [
+        c
+        for c in df.columns
+        if c
+        not in [
+            "combo_id",
+            "error",
+            metric,
+            "total_pnl",
+            "total_return_pct",
+            "num_trades",
+            "win_rate_pct",
+            "avg_win",
+            "avg_loss",
+            "profit_factor",
+            "max_drawdown_pct",
+            "sharpe_ratio",
+            "sortino_ratio",
+        ]
+    ]
 
     if not param_cols:
         return {"robust": True, "reason": "No parameters to vary"}
@@ -65,10 +79,7 @@ def _check_robustness(
         if col in best and isinstance(best[col], (int, float)):
             val = best[col]
             tolerance = max(abs(val) * 0.3, 1)
-            neighbors = neighbors[
-                (neighbors[col] >= val - tolerance) &
-                (neighbors[col] <= val + tolerance)
-            ]
+            neighbors = neighbors[(neighbors[col] >= val - tolerance) & (neighbors[col] <= val + tolerance)]
 
     if len(neighbors) < 2:
         return {

@@ -20,7 +20,7 @@ class ParameterGrid:
 
     _specs: dict[str, dict[str, list[Any]]] = field(default_factory=dict)
 
-    def add(self, indicator: str, **param_ranges: list[Any]) -> "ParameterGrid":
+    def add(self, indicator: str, **param_ranges: list[Any]) -> ParameterGrid:
         """Add parameter ranges for an indicator.
 
         Each keyword is a parameter name, and its value is a list of values to try.
@@ -44,13 +44,13 @@ class ParameterGrid:
             params = self._specs[name]
             keys = list(params.keys())
             values = list(params.values())
-            combos = [dict(zip(keys, v)) for v in product(*values)]
+            combos = [dict(zip(keys, v, strict=True)) for v in product(*values)]
             per_indicator_combos.append(combos)
 
         all_combos = []
         for combo_tuple in product(*per_indicator_combos):
             entry = {}
-            for name, combo in zip(indicator_names, combo_tuple):
+            for name, combo in zip(indicator_names, combo_tuple, strict=True):
                 entry[name] = combo
             all_combos.append(entry)
 

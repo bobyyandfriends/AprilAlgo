@@ -13,11 +13,9 @@ from aprilalgo.ml.trainer import ModelBundle, load_model_bundle
 
 def _tree_explainer(bundle: ModelBundle):
     try:
-        import shap  # type: ignore[import-not-found]
+        import shap
     except ImportError as e:
-        raise ImportError(
-            "SHAP is not installed. Add dependency 'shap' to enable explainability."
-        ) from e
+        raise ImportError("SHAP is not installed. Add dependency 'shap' to enable explainability.") from e
     return shap.TreeExplainer(bundle.booster)
 
 

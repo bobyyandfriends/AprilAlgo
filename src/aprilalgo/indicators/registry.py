@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import pandas as pd
 
@@ -18,12 +19,12 @@ class IndicatorRegistry:
     def __init__(self) -> None:
         self._indicators: list[tuple[IndicatorFn, dict]] = []
 
-    def add(self, fn: IndicatorFn, **kwargs: Any) -> "IndicatorRegistry":
+    def add(self, fn: IndicatorFn, **kwargs: Any) -> IndicatorRegistry:
         """Register an indicator function with optional keyword arguments."""
         self._indicators.append((fn, kwargs))
         return self
 
-    def add_by_name(self, name: str, **kwargs: Any) -> "IndicatorRegistry":
+    def add_by_name(self, name: str, **kwargs: Any) -> IndicatorRegistry:
         """Register an indicator by its catalog name (e.g., ``'rsi'``)."""
         from aprilalgo.indicators.descriptor import get_catalog
 
@@ -39,7 +40,7 @@ class IndicatorRegistry:
         return self
 
     @classmethod
-    def from_config(cls, indicator_list: list[dict[str, Any]]) -> "IndicatorRegistry":
+    def from_config(cls, indicator_list: list[dict[str, Any]]) -> IndicatorRegistry:
         """Build a pipeline from a list of dicts.
 
         Example::

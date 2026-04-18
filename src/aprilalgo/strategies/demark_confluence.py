@@ -13,13 +13,13 @@ from __future__ import annotations
 import pandas as pd
 
 from aprilalgo.backtest.portfolio import Portfolio
+from aprilalgo.confluence.scorer import score_confluence
+from aprilalgo.indicators.bollinger import bollinger_bands
 from aprilalgo.indicators.demark import demark
+from aprilalgo.indicators.ehlers import super_smoother
 from aprilalgo.indicators.rsi import rsi
 from aprilalgo.indicators.sma import sma
-from aprilalgo.indicators.bollinger import bollinger_bands
 from aprilalgo.indicators.volume_trend import volume_trend
-from aprilalgo.indicators.ehlers import super_smoother
-from aprilalgo.confluence.scorer import score_confluence
 from aprilalgo.strategies.base import BaseStrategy
 
 
@@ -90,11 +90,7 @@ class DeMarkConfluenceStrategy(BaseStrategy):
                 entry = trade.entry_price
                 drawdown = (entry - close) / entry
 
-                should_exit = (
-                    td_bear
-                    or conf_net < -self.confluence_threshold
-                    or drawdown >= self.stop_loss_pct
-                )
+                should_exit = td_bear or conf_net < -self.confluence_threshold or drawdown >= self.stop_loss_pct
 
                 if should_exit:
                     portfolio.close_trade(trade, time, close)

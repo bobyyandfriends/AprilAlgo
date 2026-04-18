@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404  # trusted local operator-driven CLI from Streamlit UI
 import sys
 from pathlib import Path
 
@@ -39,7 +39,7 @@ def render() -> None:
 def _run(args: list[str]) -> None:
     cmd = [sys.executable, "-m", "aprilalgo.cli", *args]
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B603  # trusted local operator-driven CLI from Streamlit UI
             cmd,
             cwd=_PROJECT_ROOT,
             capture_output=True,

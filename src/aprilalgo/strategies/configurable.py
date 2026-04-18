@@ -12,8 +12,8 @@ from typing import Any
 import pandas as pd
 
 from aprilalgo.backtest.portfolio import Portfolio
-from aprilalgo.indicators.registry import IndicatorRegistry
 from aprilalgo.confluence.scorer import score_confluence
+from aprilalgo.indicators.registry import IndicatorRegistry
 from aprilalgo.strategies.base import BaseStrategy
 
 
@@ -59,9 +59,7 @@ class ConfigurableStrategy(BaseStrategy):
         self._data: pd.DataFrame = pd.DataFrame()
 
     def init(self, price_data: pd.DataFrame) -> None:
-        pipeline = IndicatorRegistry.from_config(
-            [dict(cfg) for cfg in self.indicator_configs]
-        )
+        pipeline = IndicatorRegistry.from_config([dict(cfg) for cfg in self.indicator_configs])
         df = pipeline.apply(price_data)
         df = score_confluence(df)
         self._data = df
@@ -77,14 +75,8 @@ class ConfigurableStrategy(BaseStrategy):
             return
 
         if not portfolio.has_open_position:
-            should_long = (
-                self.direction in ("long", "both")
-                and conf_net >= self.entry_threshold
-            )
-            should_short = (
-                self.direction in ("short", "both")
-                and conf_net <= -self.entry_threshold
-            )
+            should_long = self.direction in ("long", "both") and conf_net >= self.entry_threshold
+            should_short = self.direction in ("short", "both") and conf_net <= -self.entry_threshold
 
             if should_long:
                 shares = int(portfolio.cash * self.position_pct / close)

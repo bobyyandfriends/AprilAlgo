@@ -12,6 +12,7 @@ dependencies = [
     "matplotlib>=3.10.8",
     "numpy>=2.4.4",
     "pandas>=3.0.1",
+    "pillow>=12.2.0",
     "plotly>=6.6.0",
     "pyyaml>=6.0.3",
     "scikit-learn>=1.8.0",
@@ -36,5 +37,81 @@ packages = ["src/aprilalgo"]
 
 [dependency-groups]
 dev = [
+    "bandit>=1.9.4",
+    "mypy>=1.20.1",
+    "pandas-stubs>=3.0.0.260204",
     "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.11",
+    "types-pyyaml>=6.0.12.20260408",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--cov=aprilalgo",
+    "--cov-report=term-missing",
+    "--cov-fail-under=84",
+]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests"]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "I", "B", "UP", "SIM",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["aprilalgo"]
+warn_unused_configs = true
+warn_return_any = false
+warn_unused_ignores = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aprilalgo.ui.*",
+    "aprilalgo.cli",
+    "aprilalgo.reporting.*",
+    "aprilalgo.data.fetcher",
+    "aprilalgo.confluence.probability",
+    "aprilalgo.confluence.timeframe_aligner",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "streamlit.*",
+    "plotly.*",
+    "shap.*",
+    "xgboost.*",
+    "sklearn.*",
+    "matplotlib.*",
+]
+ignore_missing_imports = true
+
+# Pandas-stubs + ndarray/ExtensionArray unions are still noisy here; tighten incrementally.
+[[tool.mypy.overrides]]
+module = [
+    "aprilalgo.meta.regime",
+    "aprilalgo.indicators.tmi",
+    "aprilalgo.indicators.pv_sequences",
+    "aprilalgo.indicators.hurst",
+    "aprilalgo.indicators.ehlers",
+    "aprilalgo.data.resampler",
+]
+ignore_errors = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101"]

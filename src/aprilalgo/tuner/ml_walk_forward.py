@@ -24,9 +24,7 @@ from aprilalgo.ml.pipeline import prepare_xy, weights_for_training, xgb_estimato
 from aprilalgo.ml.trainer import Task
 from aprilalgo.tuner.walk_forward import walk_forward_splits
 
-SUPPORTED_METRICS: frozenset[str] = frozenset(
-    {"accuracy", "f1_macro", "neg_log_loss"}
-)
+SUPPORTED_METRICS: frozenset[str] = frozenset({"accuracy", "f1_macro", "neg_log_loss"})
 
 
 def supported_metrics() -> frozenset[str]:
@@ -104,9 +102,7 @@ def _score_from_purged_mean(mean: dict[str, Any], metric: str, task: Task) -> fl
         ll = mean.get("log_loss")
         v = -float(ll) if ll is not None else None
     else:
-        raise ValueError(
-            f"Unknown metric {metric!r}; expected one of {sorted(SUPPORTED_METRICS)}"
-        )
+        raise ValueError(f"Unknown metric {metric!r}; expected one of {sorted(SUPPORTED_METRICS)}")
     if v is None:
         return float("nan")
     return float(v)
@@ -118,8 +114,6 @@ def _merge_xgb_params(cfg: dict[str, Any], grid_point: dict[str, Any]) -> dict[s
     rs = int(cfg.get("random_state", 42))
     base.setdefault("random_state", rs)
     return base
-
-
 
 
 def ml_walk_forward_tune(
@@ -159,9 +153,7 @@ def ml_walk_forward_tune(
     if not grid:
         raise ValueError("grid must be a non-empty list of parameter dicts")
     if metric not in SUPPORTED_METRICS:
-        raise ValueError(
-            f"metric must be one of {sorted(SUPPORTED_METRICS)}, got {metric!r}"
-        )
+        raise ValueError(f"metric must be one of {sorted(SUPPORTED_METRICS)}, got {metric!r}")
 
     sym = symbol if symbol is not None else str(cfg["symbol"])
     X, y, t0, t1, task = prepare_xy(cfg, symbol=sym)
@@ -177,15 +169,9 @@ def ml_walk_forward_tune(
     embargo = int(cv_block.get("embargo", 0))
 
     n = len(X)
-    splits = list(
-        walk_forward_splits(
-            n, n_folds=n_folds, min_train=min_train, test_size=test_size
-        )
-    )
+    splits = list(walk_forward_splits(n, n_folds=n_folds, min_train=min_train, test_size=test_size))
     if not splits:
-        raise ValueError(
-            "walk_forward_splits produced no splits; lower min_train or check data length"
-        )
+        raise ValueError("walk_forward_splits produced no splits; lower min_train or check data length")
 
     rows: list[dict[str, Any]] = []
     for gi, grid_point in enumerate(grid):

@@ -10,7 +10,8 @@ For triple-barrier labels, use :func:`aprilalgo.labels.triple_barrier.label_incl
 
 from __future__ import annotations
 
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -93,9 +94,7 @@ class PurgedKFold:
             raise ValueError("X and y must have the same length")
 
         if sample_t1 is None:
-            raise ValueError(
-                "sample_t1 is required for purged k-fold (inclusive end index per row)"
-            )
+            raise ValueError("sample_t1 is required for purged k-fold (inclusive end index per row)")
 
         t0 = np.arange(n, dtype=np.int64) if sample_t0 is None else np.asarray(sample_t0)
         t1 = np.asarray(sample_t1, dtype=np.float64)
@@ -261,11 +260,7 @@ def learning_matrix(
 
     X_raw = build_feature_matrix(df, indicator_config=indicator_config, **extra)
     y = tb.label
-    mask_arr = (
-        y.notna().to_numpy()
-        & np.isfinite(t1_full)
-        & X_raw.notna().all(axis=1).to_numpy()
-    )
+    mask_arr = y.notna().to_numpy() & np.isfinite(t1_full) & X_raw.notna().all(axis=1).to_numpy()
     X = X_raw.loc[mask_arr].reset_index(drop=True)
     y = y.loc[mask_arr].reset_index(drop=True)
     t0 = t0_full[mask_arr]

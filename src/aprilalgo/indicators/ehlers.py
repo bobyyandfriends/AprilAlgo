@@ -102,13 +102,14 @@ def roofing_filter(
     src, first_valid = _forward_fill_source(src_raw)
     n = len(src)
 
-    alpha_hp = (np.cos(2 * np.pi / hp_period) +
-                np.sin(2 * np.pi / hp_period) - 1) / np.cos(2 * np.pi / hp_period)
+    alpha_hp = (np.cos(2 * np.pi / hp_period) + np.sin(2 * np.pi / hp_period) - 1) / np.cos(2 * np.pi / hp_period)
     hp = np.zeros(n)
     for i in range(first_valid + 2, n):
-        hp[i] = ((1 - alpha_hp / 2) * (1 - alpha_hp / 2) * (src[i] - 2 * src[i - 1] + src[i - 2])
-                 + 2 * (1 - alpha_hp) * hp[i - 1]
-                 - (1 - alpha_hp) * (1 - alpha_hp) * hp[i - 2])
+        hp[i] = (
+            (1 - alpha_hp / 2) * (1 - alpha_hp / 2) * (src[i] - 2 * src[i - 1] + src[i - 2])
+            + 2 * (1 - alpha_hp) * hp[i - 1]
+            - (1 - alpha_hp) * (1 - alpha_hp) * hp[i - 2]
+        )
 
     a = np.exp(-np.sqrt(2) * np.pi / lp_period)
     b = 2 * a * np.cos(np.sqrt(2) * np.pi / lp_period)
@@ -149,13 +150,11 @@ def decycler(
     src, first_valid = _forward_fill_source(src_raw)
     n = len(src)
 
-    alpha = (np.cos(2 * np.pi / period) +
-             np.sin(2 * np.pi / period) - 1) / np.cos(2 * np.pi / period)
+    alpha = (np.cos(2 * np.pi / period) + np.sin(2 * np.pi / period) - 1) / np.cos(2 * np.pi / period)
 
     hp = np.zeros(n)
     for i in range(first_valid + 1, n):
-        hp[i] = ((1 - alpha / 2) * (src[i] - src[i - 1])
-                 + (1 - alpha) * hp[i - 1])
+        hp[i] = (1 - alpha / 2) * (src[i] - src[i - 1]) + (1 - alpha) * hp[i - 1]
 
     dec = src - hp
     # Restore NaN in the leading prefix so the output doesn't synthesise trend

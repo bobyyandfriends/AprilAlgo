@@ -2,9 +2,9 @@
 
 from aprilalgo.backtest.engine import run_backtest
 from aprilalgo.backtest.logger import SignalJsonlLogger, events_to_dataframe
-from aprilalgo.backtest.trade import Trade
-from aprilalgo.backtest.portfolio import Portfolio
 from aprilalgo.backtest.metrics import calculate_metrics
+from aprilalgo.backtest.portfolio import Portfolio
+from aprilalgo.backtest.trade import Trade
 
 __all__ = [
     "SignalJsonlLogger",

@@ -58,9 +58,7 @@ class ModelBundle:
                 out[:, 1] = p
                 return out
             if classes.shape[0] > 2:
-                raise ValueError(
-                    f"Binary bundle must expose <=2 classes, got {classes.tolist()}"
-                )
+                raise ValueError(f"Binary bundle must expose <=2 classes, got {classes.tolist()}")
             # Booster ``predict`` returns P(class=positive_label). Identify which
             # column in ``classes_`` is the positive (larger) label and place the
             # predicted probability there so column order always matches classes_.
@@ -158,10 +156,7 @@ def save_model_bundle(
             # or use :func:`train_xgb_classifier` so inference returns the correct
             # class axis.
             k = raw_classes.shape[0]
-            looks_like_encoded = (
-                k >= 2
-                and np.array_equal(raw_classes, np.arange(k, dtype=np.float64))
-            )
+            looks_like_encoded = k >= 2 and np.array_equal(raw_classes, np.arange(k, dtype=np.float64))
             if looks_like_encoded:
                 raise ValueError(
                     "save_model_bundle multiclass fallback refused: clf.classes_ "
@@ -185,9 +180,7 @@ def save_model_bundle(
     }
     if extra_meta:
         meta.update(extra_meta)
-    (root / "meta.json").write_text(
-        json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    (root / "meta.json").write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
     return root
 
 
@@ -214,7 +207,7 @@ def load_model_bundle(model_dir: str | Path) -> ModelBundle:
     return ModelBundle(
         booster=booster,
         feature_names=feature_names,
-        task=task,  # type: ignore[arg-type]
+        task=task,
         classes_=classes,
         indicator_config=ind_cfg,
         meta=meta,

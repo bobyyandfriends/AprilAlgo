@@ -57,9 +57,7 @@ def extract_feature_matrix(
     convert_bool: bool = True,
 ) -> pd.DataFrame:
     """Return a copy of *enriched* with only feature columns (strip OHLCV and time fields)."""
-    cols = feature_column_names(
-        enriched, excluded=excluded, extra_exclude=extra_exclude
-    )
+    cols = feature_column_names(enriched, excluded=excluded, extra_exclude=extra_exclude)
     if not cols:
         return pd.DataFrame(index=enriched.index)
     X = enriched.loc[:, cols].copy()

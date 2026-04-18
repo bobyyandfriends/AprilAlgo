@@ -118,12 +118,8 @@ class MLStrategy(BaseStrategy):
             data = json.loads(idx_path.read_text(encoding="utf-8"))
             buckets = data["buckets"]
             default_sub = data["default"]
-            self._regime_bundles = {
-                str(k): load_model_bundle(self.model_dir / sub) for k, sub in buckets.items()
-            }
-            self._regime_default_key = next(
-                k for k, v in buckets.items() if v == default_sub
-            )
+            self._regime_bundles = {str(k): load_model_bundle(self.model_dir / sub) for k, sub in buckets.items()}
+            self._regime_default_key = next(k for k, v in buckets.items() if v == default_sub)
             self._bundle = load_model_bundle(self.model_dir / default_sub)
         else:
             self._regime_bundles = None
@@ -139,9 +135,7 @@ class MLStrategy(BaseStrategy):
             self._meta_gate_enabled = True
         cfg = self.indicator_config_override or bundle.indicator_config
         if not cfg:
-            raise ValueError(
-                "ml_xgboost requires indicator_config in meta.json or strategy params"
-            )
+            raise ValueError("ml_xgboost requires indicator_config in meta.json or strategy params")
         work = price_data
         ib = bundle.meta.get("information_bars")
         if isinstance(ib, dict) and ib.get("enabled"):
@@ -167,19 +161,14 @@ class MLStrategy(BaseStrategy):
             ref = list(bundle.feature_names)
             for bb in self._regime_bundles.values():
                 if list(bb.feature_names) != ref:
-                    raise ValueError(
-                        "regime sub-bundles must share identical feature_names for ml_xgboost"
-                    )
+                    raise ValueError("regime sub-bundles must share identical feature_names for ml_xgboost")
         if self._log_path:
             self._logger = SignalJsonlLogger(self._log_path)
 
     def _bundle_for_row(self, xrow: pd.DataFrame) -> ModelBundle:
-        if (
-            self._regime_bundles is None
-            or self._regime_default_key is None
-            or "vol_regime" not in xrow.columns
-        ):
-            assert self._bundle is not None
+        if self._regime_bundles is None or self._regime_default_key is None or "vol_regime" not in xrow.columns:
+            if self._bundle is None:
+                raise RuntimeError("MLStrategy: primary bundle missing for non-regime path")
             return self._bundle
         v = xrow["vol_regime"].iloc[0]
         keys = self._regime_bundles
@@ -214,9 +203,7 @@ class MLStrategy(BaseStrategy):
 
         if not portfolio.has_open_position:
             allow_primary = p_tp >= self.entry_proba_threshold
-            allow_meta = (
-                p_meta is None or p_meta >= self.meta_proba_threshold
-            )
+            allow_meta = p_meta is None or p_meta >= self.meta_proba_threshold
             if allow_primary and allow_meta:
                 close = float(row["close"])
                 if self._position_sizer is not None:
@@ -258,9 +245,7 @@ class MLStrategy(BaseStrategy):
                 close = float(row["close"])
                 drawdown = (entry - close) / entry
                 exit_trade = False
-                if drawdown >= self.stop_loss_pct:
-                    exit_trade = True
-                elif p_tp < self.entry_proba_threshold * 0.5:
+                if drawdown >= self.stop_loss_pct or p_tp < self.entry_proba_threshold * 0.5:
                     exit_trade = True
                 if exit_trade:
                     portfolio.close_trade(trade, ts, close)

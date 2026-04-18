@@ -43,9 +43,7 @@ def _top_k_features_by_mean_abs(shap_matrix: pd.DataFrame, k: int) -> list[str]:
 
 
 def _feature_palette(features: Sequence[str]) -> dict[str, str]:
-    return {
-        f: _DEFAULT_PALETTE[i % len(_DEFAULT_PALETTE)] for i, f in enumerate(features)
-    }
+    return {f: _DEFAULT_PALETTE[i % len(_DEFAULT_PALETTE)] for i, f in enumerate(features)}
 
 
 def render_shap_stack_panel(
@@ -141,12 +139,7 @@ def render_global_importance(
         return
 
     col = "mean_abs_shap" if "mean_abs_shap" in importance.columns else importance.columns[-1]
-    imp = (
-        importance[["feature", col]]
-        .dropna()
-        .sort_values(col, ascending=True)
-        .tail(int(top_k))
-    )
+    imp = importance[["feature", col]].dropna().sort_values(col, ascending=True).tail(int(top_k))
 
     fig = go.Figure()
     fig.add_trace(

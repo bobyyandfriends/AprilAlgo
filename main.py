@@ -6,9 +6,9 @@ import argparse
 import sys
 from pathlib import Path
 
+from aprilalgo.backtest import run_backtest
 from aprilalgo.config import load_config
 from aprilalgo.data import load_price_data
-from aprilalgo.backtest import run_backtest
 from aprilalgo.strategies import STRATEGIES
 
 
@@ -33,21 +33,23 @@ def main(argv: list[str] | None = None) -> None:
     timeframe = cfg["timeframe"]
     strategy_name = cfg["strategy"]
 
-    print(f"AprilAlgo Backtest")
-    print(f"{'='*50}")
+    print("AprilAlgo Backtest")
+    print(f"{'=' * 50}")
     print(f"Symbol:     {symbol}")
     print(f"Timeframe:  {timeframe}")
     print(f"Strategy:   {strategy_name}")
     print(f"Capital:    ${cfg['initial_capital']:,.2f}")
     print(f"Commission: ${cfg['commission']}")
-    print(f"Slippage:   {cfg['slippage']*100:.2f}%")
+    print(f"Slippage:   {cfg['slippage'] * 100:.2f}%")
     print()
 
     # Load data
     print(f"Loading {symbol} {timeframe} data...")
     data_dir = Path(cfg["data_dir"]) if cfg.get("data_dir") else None
     price_data = load_price_data(symbol, timeframe, data_dir=data_dir)
-    print(f"  Loaded {len(price_data)} bars  ({price_data['datetime'].iloc[0].date()} to {price_data['datetime'].iloc[-1].date()})")
+    first_dt = price_data["datetime"].iloc[0].date()
+    last_dt = price_data["datetime"].iloc[-1].date()
+    print(f"  Loaded {len(price_data)} bars  ({first_dt} to {last_dt})")
     print()
 
     # Create strategy
@@ -71,8 +73,8 @@ def main(argv: list[str] | None = None) -> None:
     trades_df = results["trades"]
 
     print()
-    print(f"Results")
-    print(f"{'='*50}")
+    print("Results")
+    print(f"{'=' * 50}")
     print(f"Total P&L:      ${metrics['total_pnl']:>12,.2f}")
     print(f"Total Return:   {metrics['total_return_pct']:>12.2f}%")
     print(f"Num Trades:     {metrics['num_trades']:>12}")
@@ -86,8 +88,8 @@ def main(argv: list[str] | None = None) -> None:
 
     if not trades_df.empty:
         print()
-        print(f"Trade Log (first 10)")
-        print(f"{'-'*50}")
+        print("Trade Log (first 10)")
+        print(f"{'-' * 50}")
         display_cols = ["entry_time", "exit_time", "side", "entry_price", "exit_price", "realized_pnl"]
         cols = [c for c in display_cols if c in trades_df.columns]
         print(trades_df[cols].head(10).to_string(index=False))

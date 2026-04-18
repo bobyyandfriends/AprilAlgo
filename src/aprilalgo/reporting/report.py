@@ -122,14 +122,9 @@ def render_sampling_section(
     if s.empty:
         return ""
     counts, edges = np.histogram(s.to_numpy(dtype=np.float64), bins=bins)
-    hist_df = pd.DataFrame(
-        {"bin_left": edges[:-1], "bin_right": edges[1:], "count": counts.astype(int)}
-    )
+    hist_df = pd.DataFrame({"bin_left": edges[:-1], "bin_right": edges[1:], "count": counts.astype(int)})
     inner = hist_df.to_html(index=False, escape=True, float_format=lambda x: f"{x:.6g}")
-    return (
-        '<section id="section-sampling"><h2>Sampling weights</h2>'
-        f"<p>Rows: {len(s)}</p>{inner}</section>"
-    )
+    return f'<section id="section-sampling"><h2>Sampling weights</h2><p>Rows: {len(s)}</p>{inner}</section>'
 
 
 def render_meta_section(
@@ -144,20 +139,14 @@ def render_meta_section(
     if coefficients is not None and not coefficients.empty:
         inner.append(coefficients.to_html(index=False, escape=True))
     if oof_coverage is not None:
-        inner.append(
-            f"<p>OOF prediction coverage: <strong>{html.escape(f'{float(oof_coverage):.4f}')}</strong></p>"
-        )
+        inner.append(f"<p>OOF prediction coverage: <strong>{html.escape(f'{float(oof_coverage):.4f}')}</strong></p>")
     if oof_rows is not None:
         inner.append(f"<p>OOF table rows: <strong>{int(oof_rows)}</strong></p>")
     if oof_nonnull is not None:
         inner.append(f"<p>Rows with non-null OOF pred: <strong>{int(oof_nonnull)}</strong></p>")
     if not inner:
         return ""
-    return (
-        '<section id="section-meta"><h2>Meta-label &amp; OOF</h2>'
-        + "".join(inner)
-        + "</section>"
-    )
+    return '<section id="section-meta"><h2>Meta-label &amp; OOF</h2>' + "".join(inner) + "</section>"
 
 
 def render_regime_section(
@@ -165,9 +154,7 @@ def render_regime_section(
     per_regime_accuracy: pd.DataFrame | None,
 ) -> str:
     """Emit ``section-regime`` with bucket row counts and optional per-bucket accuracy."""
-    if (bucket_counts is None or bucket_counts.empty) and (
-        per_regime_accuracy is None or per_regime_accuracy.empty
-    ):
+    if (bucket_counts is None or bucket_counts.empty) and (per_regime_accuracy is None or per_regime_accuracy.empty):
         return ""
     parts: list[str] = ['<section id="section-regime"><h2>Regime buckets</h2>']
     if bucket_counts is not None and not bucket_counts.empty:
@@ -190,9 +177,7 @@ def render_wf_tuner_section(
         return ""
     from aprilalgo.tuner.ml_walk_forward import aggregate_grid
 
-    agg = aggregate_grid(wf_tune_results, "score").sort_values("mean", ascending=False).head(
-        int(top_n)
-    )
+    agg = aggregate_grid(wf_tune_results, "score").sort_values("mean", ascending=False).head(int(top_n))
     parts: list[str] = [
         '<section id="section-wf-tuner"><h2>Walk-forward tuner</h2>',
         f"<h3>Top {int(top_n)} by mean score</h3>",
@@ -205,14 +190,8 @@ def render_wf_tuner_section(
 
 
 def _metrics_section_html(metrics: dict[str, Any]) -> str:
-    rows = "".join(
-        f"<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>"
-        for k, v in metrics.items()
-    )
-    return (
-        '<section id="section-metrics"><h2>Metrics</h2>'
-        f'<table border="1">{rows}</table></section>'
-    )
+    rows = "".join(f"<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>" for k, v in metrics.items())
+    return f'<section id="section-metrics"><h2>Metrics</h2><table border="1">{rows}</table></section>'
 
 
 def render_full_ml_report_html(

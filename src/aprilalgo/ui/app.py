@@ -38,31 +38,41 @@ page = st.sidebar.radio("Navigate", list(PAGES.keys()), label_visibility="collap
 
 if page == "Charts":
     from aprilalgo.ui.pages.charts import render
+
     render()
 elif page == "Signal Feed":
     from aprilalgo.ui.pages.signals import render
+
     render()
 elif page == "Dashboard":
     from aprilalgo.ui.pages.dashboard import render
+
     render()
 elif page == "Parameter Tuner":
     from aprilalgo.ui.pages.tuner import render
+
     render()
 elif page == "ML lab":
     from aprilalgo.ui.pages.model_lab import render
+
     render()
 elif page == "Model trainer":
     from aprilalgo.ui.pages.model_trainer import render
+
     render()
 elif page == "Model metrics":
     from aprilalgo.ui.pages.model_metrics import render
+
     render()
 elif page == "Walk-forward":
     from aprilalgo.ui.pages.walk_forward_lab import render
+
     render()
 elif page == "Regime lab":
     from aprilalgo.ui.pages.regime_lab import render
+
     render()
 elif page == "Portfolio lab":
     from aprilalgo.ui.pages.portfolio_lab import render
+
     render()

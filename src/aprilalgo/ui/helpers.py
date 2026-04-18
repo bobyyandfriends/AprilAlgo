@@ -19,10 +19,7 @@ def discover_symbols() -> dict[str, list[str]]:
         if not folder.is_dir():
             continue
         tf_name = folder.name.replace("_data", "")
-        symbols = sorted(
-            f.stem.replace(f"_{tf_name}", "").upper()
-            for f in folder.glob("*.csv")
-        )
+        symbols = sorted(f.stem.replace(f"_{tf_name}", "").upper() for f in folder.glob("*.csv"))
         if symbols:
             result[tf_name] = symbols
     return result

@@ -9,7 +9,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
 
 from aprilalgo.data.fetcher import fetch_universe
 from aprilalgo.data.universe import load_universe
@@ -17,24 +16,17 @@ from aprilalgo.data.universe import load_universe
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Fetch OHLCV data from Massive API")
-    parser.add_argument("--symbols", type=str, default=None,
-                        help="Comma-separated symbols (e.g. AAPL,NVDA,TSLA)")
-    parser.add_argument("--universe", type=str, default=None,
-                        help="Path to a symbols YAML or text file")
-    parser.add_argument("--timeframe", type=str, default="daily",
-                        help="Timeframe: 1min, 5min, 15min, 30min, hourly, daily, weekly")
-    parser.add_argument("--start", type=str, default="2020-01-01",
-                        help="Start date (YYYY-MM-DD)")
-    parser.add_argument("--end", type=str, default=None,
-                        help="End date (YYYY-MM-DD, defaults to today)")
-    parser.add_argument("--api-key", type=str, default=None,
-                        help="Massive API key (or set MASSIVE_API_KEY env var)")
+    parser.add_argument("--symbols", type=str, default=None, help="Comma-separated symbols (e.g. AAPL,NVDA,TSLA)")
+    parser.add_argument("--universe", type=str, default=None, help="Path to a symbols YAML or text file")
+    parser.add_argument(
+        "--timeframe", type=str, default="daily", help="Timeframe: 1min, 5min, 15min, 30min, hourly, daily, weekly"
+    )
+    parser.add_argument("--start", type=str, default="2020-01-01", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--end", type=str, default=None, help="End date (YYYY-MM-DD, defaults to today)")
+    parser.add_argument("--api-key", type=str, default=None, help="Massive API key (or set MASSIVE_API_KEY env var)")
     args = parser.parse_args(argv)
 
-    if args.symbols:
-        symbols = [s.strip().upper() for s in args.symbols.split(",")]
-    else:
-        symbols = load_universe(args.universe)
+    symbols = [s.strip().upper() for s in args.symbols.split(",")] if args.symbols else load_universe(args.universe)
 
     print(f"Fetching {args.timeframe} data for {len(symbols)} symbols")
     print(f"  Range: {args.start} → {args.end or 'today'}")

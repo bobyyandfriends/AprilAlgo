@@ -32,10 +32,7 @@ class MetaLogitBundle:
         """Return shape ``(n_samples, n_classes)`` like sklearn."""
         missing = set(self.feature_names) - set(X.columns)
         if missing:
-            raise ValueError(
-                "X is missing columns required by the meta logit bundle: "
-                + ", ".join(sorted(missing))
-            )
+            raise ValueError("X is missing columns required by the meta logit bundle: " + ", ".join(sorted(missing)))
         Xd = X[list(self.feature_names)].to_numpy(dtype=np.float64, copy=False)
         logits = Xd @ self.coef.T + self.intercept.reshape(1, -1)
         if logits.shape[1] == 1:
@@ -78,9 +75,7 @@ def save_meta_logit_bundle(
     return path
 
 
-def load_meta_logit_bundle(
-    out_dir: str | Path, *, rel_path: str = "meta_logit.json"
-) -> MetaLogitBundle:
+def load_meta_logit_bundle(out_dir: str | Path, *, rel_path: str = "meta_logit.json") -> MetaLogitBundle:
     """Load :class:`MetaLogitBundle` from ``<out_dir>/<rel_path>`` (default ``meta_logit.json``)."""
     root = Path(out_dir)
     path = root / rel_path

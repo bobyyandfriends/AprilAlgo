@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from sklearn.metrics import roc_curve
 import streamlit as st
 import yaml
+from sklearn.metrics import roc_curve
 from xgboost import XGBClassifier
 
 from aprilalgo.ml.evaluator import purged_cv_evaluate
@@ -67,9 +67,9 @@ def render() -> None:
         st.subheader("Mean metrics")
         st.json(res.get("mean", {}))
         if "f1" in res.get("mean", {}):
-            st.metric("Mean F1", f'{float(res["mean"]["f1"]):.3f}')
+            st.metric("Mean F1", f"{float(res['mean']['f1']):.3f}")
         if "f1_macro" in res.get("mean", {}):
-            st.metric("Mean F1 macro", f'{float(res["mean"]["f1_macro"]):.3f}')
+            st.metric("Mean F1 macro", f"{float(res['mean']['f1_macro']):.3f}")
         fd = res.get("folds_df")
         if isinstance(fd, pd.DataFrame) and not fd.empty:
             st.subheader("Per-fold")
@@ -124,8 +124,7 @@ def render() -> None:
                     st.bar_chart(imp.set_index("feature")["score"])
                 else:
                     st.warning(
-                        f"importance_gain.csv exists but is missing required columns "
-                        f"(found: {list(imp.columns)})"
+                        f"importance_gain.csv exists but is missing required columns (found: {list(imp.columns)})"
                     )
             except Exception as exc:  # pragma: no cover - UI best-effort
                 st.warning(f"Could not read importance_gain.csv: {exc}")
@@ -135,9 +134,7 @@ def render() -> None:
             data=json.dumps(
                 {
                     "mean": res.get("mean"),
-                    "folds_df": fd.to_dict(orient="records")
-                    if isinstance(fd, pd.DataFrame)
-                    else [],
+                    "folds_df": fd.to_dict(orient="records") if isinstance(fd, pd.DataFrame) else [],
                 },
                 indent=2,
                 default=str,

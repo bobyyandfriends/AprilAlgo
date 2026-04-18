@@ -47,6 +47,7 @@ coverage.xml
 *.py.cover
 .hypothesis/
 .pytest_cache/
+.pytest_baseline.txt
 cover/
 
 # Translations
@@ -163,6 +164,7 @@ __marimo__/
 # Data files — CSV price data is too large for git
 data/
 *.csv
+!tests/fixtures/**/*.csv
 *.xlsx
 
 # Backtest outputs
@@ -170,6 +172,3 @@ outputs/
 
 # Saved ML models
 models/
-
-# Test files
-test_*.py

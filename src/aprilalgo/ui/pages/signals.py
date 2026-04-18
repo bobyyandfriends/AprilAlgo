@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
+from aprilalgo.confluence.scorer import score_confluence
 from aprilalgo.data import load_price_data
 from aprilalgo.indicators.descriptor import get_catalog
-from aprilalgo.confluence.scorer import score_confluence
 from aprilalgo.ui.helpers import discover_symbols
 
 
@@ -22,13 +22,19 @@ def render() -> None:
     with st.sidebar:
         st.subheader("Signal Settings")
         timeframes = list(available.keys())
-        tf = st.selectbox("Timeframe", timeframes,
-                          index=timeframes.index("daily") if "daily" in timeframes else 0,
-                          key="sig_tf")
+        tf = st.selectbox(
+            "Timeframe",
+            timeframes,
+            index=timeframes.index("daily") if "daily" in timeframes else 0,
+            key="sig_tf",
+        )
         symbols = available.get(tf, [])
-        symbol = st.selectbox("Symbol", symbols,
-                              index=symbols.index("AAPL") if "AAPL" in symbols else 0,
-                              key="sig_sym")
+        symbol = st.selectbox(
+            "Symbol",
+            symbols,
+            index=symbols.index("AAPL") if "AAPL" in symbols else 0,
+            key="sig_sym",
+        )
         n_rows = st.slider("Show last N bars", 10, 200, 50, key="sig_n")
         min_conf = st.slider("Min |confluence_net|", 0.0, 1.0, 0.0, 0.05, key="sig_min")
 
@@ -105,14 +111,24 @@ def render() -> None:
 
     st.subheader("Signal Breakdown")
     show_cols = (
-        ["datetime", "close", "confluence_net", "confluence_direction",
-         "bull_count", "bull_total", "bear_count", "bear_total"]
-        + bull_cols + bear_cols
+        [
+            "datetime",
+            "close",
+            "confluence_net",
+            "confluence_direction",
+            "bull_count",
+            "bull_total",
+            "bear_count",
+            "bear_total",
+        ]
+        + bull_cols
+        + bear_cols
     )
     show_cols = [c for c in show_cols if c in tail.columns]
     st.dataframe(
         tail[show_cols].iloc[::-1].reset_index(drop=True),
-        use_container_width=True, height=400,
+        use_container_width=True,
+        height=400,
     )
 
 
