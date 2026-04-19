@@ -1,22 +1,18 @@
-"""AprilAlgo — Streamlit UI entry point.
+"""AprilAlgo Streamlit page registry (no Streamlit calls at import time).
 
-Run with:  uv run streamlit run src/aprilalgo/ui/app.py
+The Streamlit **entry script** is :mod:`aprilalgo.streamlit_app` — run::
+
+    uv run streamlit run src/aprilalgo/streamlit_app.py
+
+Keeping this module free of ``streamlit`` imports avoids side effects when
+tests do ``import aprilalgo.ui.app`` and prevents accidentally using
+``src/aprilalgo/ui/app.py`` as the Streamlit entrypoint (which would sit next to
+the ``pages/`` package and trigger Streamlit's automatic multipage discovery).
 """
 
 from __future__ import annotations
 
-import streamlit as st
-
-st.set_page_config(
-    page_title="AprilAlgo",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-# --------------- sidebar navigation ---------------
-
-PAGES = {
+PAGES: dict[str, str] = {
     "Charts": "charts",
     "Signal Feed": "signals",
     "Dashboard": "dashboard",
@@ -28,51 +24,3 @@ PAGES = {
     "Regime lab": "regime_lab",
     "Portfolio lab": "portfolio_lab",
 }
-
-st.sidebar.title("AprilAlgo")
-st.sidebar.caption("Quantitative Trading Intelligence")
-st.sidebar.divider()
-page = st.sidebar.radio("Navigate", list(PAGES.keys()), label_visibility="collapsed")
-
-# --------------- page routing ---------------
-
-if page == "Charts":
-    from aprilalgo.ui.pages.charts import render
-
-    render()
-elif page == "Signal Feed":
-    from aprilalgo.ui.pages.signals import render
-
-    render()
-elif page == "Dashboard":
-    from aprilalgo.ui.pages.dashboard import render
-
-    render()
-elif page == "Parameter Tuner":
-    from aprilalgo.ui.pages.tuner import render
-
-    render()
-elif page == "ML lab":
-    from aprilalgo.ui.pages.model_lab import render
-
-    render()
-elif page == "Model trainer":
-    from aprilalgo.ui.pages.model_trainer import render
-
-    render()
-elif page == "Model metrics":
-    from aprilalgo.ui.pages.model_metrics import render
-
-    render()
-elif page == "Walk-forward":
-    from aprilalgo.ui.pages.walk_forward_lab import render
-
-    render()
-elif page == "Regime lab":
-    from aprilalgo.ui.pages.regime_lab import render
-
-    render()
-elif page == "Portfolio lab":
-    from aprilalgo.ui.pages.portfolio_lab import render
-
-    render()

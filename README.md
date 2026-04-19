@@ -20,7 +20,7 @@ Fenced blocks labeled `bash` are ordinary shell commands: run them from a **repo
 |------|---------|
 | Backtest (CLI) | `uv run python main.py --symbol AAPL --strategy demark_confluence` |
 | Backtest smoke (`TEST` fixture, no `data/` CSV) | `uv run python main.py --config configs/smoke_backtest.yaml` |
-| Streamlit UI | `uv run streamlit run src/aprilalgo/ui/app.py` |
+| Streamlit UI | `uv run streamlit run src/aprilalgo/streamlit_app.py` |
 | Tests | `uv run pytest tests/ -v` |
 | ML train | `uv run python -m aprilalgo.cli train --config configs/ml/default.yaml` |
 | ML sampling (overlap / bootstrap weights) | Same config + optional YAML `sampling` block: `strategy: uniqueness` or `strategy: bootstrap` (see `docs/DATA_SCHEMA.md` §11) |

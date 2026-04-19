@@ -12,7 +12,7 @@ import aprilalgo.ui.app as app_module
 
 @pytest.mark.parametrize("label", list(app_module.PAGES.keys()))
 def test_app_navigation_each_page(label: str) -> None:
-    at = AppTest.from_file("src/aprilalgo/ui/app.py", default_timeout=60)
+    at = AppTest.from_file("src/aprilalgo/streamlit_app.py", default_timeout=60)
     at.run()
     assert not at.exception
     at.sidebar.radio[0].set_value(label)

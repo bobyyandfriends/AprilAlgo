@@ -1,6 +1,6 @@
 """Charts page package.
 
-Public surface: ``render`` (called by the Streamlit router in ``ui/app.py``).
+Public surface: ``render`` (called by the Streamlit router in ``streamlit_app.py``).
 
 Internals are split across submodules:
 

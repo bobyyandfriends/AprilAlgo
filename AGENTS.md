@@ -177,7 +177,7 @@ uv run python -m aprilalgo.cli bars --input tests/fixtures/daily_data/TEST_daily
 ### 5.7 UI
 
 ```bash
-uv run streamlit run src/aprilalgo/ui/app.py
+uv run streamlit run src/aprilalgo/streamlit_app.py
 ```
 
 ---

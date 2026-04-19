@@ -768,7 +768,7 @@ hmmlearn         # Hidden Markov Model for regime detection (optional)
 | `xgboost` | v0.3 | `XGBClassifier` trained on feature matrix | `src/aprilalgo/ml/trainer.py` |
 | `shap` | v0.3 | `shap.Explainer(model)` + plots | `src/aprilalgo/explain/shap_explainer.py` |
 | `scikit-learn` | v0.3 | Preprocessing, custom CV splitter | `src/aprilalgo/ml/cv.py`, `features.py` |
-| `streamlit` | v0.3 | UI framework | `src/aprilalgo/ui/app.py` |
+| `streamlit` | v0.3 | UI framework | `src/aprilalgo/streamlit_app.py` |
 | `plotly` | v0.3 | Interactive charts in Streamlit | `src/aprilalgo/ui/pages/charts.py` |
 | `legitindicators` | REFERENCE | Math formulas for Hurst, Ehlers — port, don't import | `src/aprilalgo/indicators/*.py` |
 
