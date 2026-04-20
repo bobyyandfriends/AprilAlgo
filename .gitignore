@@ -162,7 +162,7 @@ __marimo__/
 # .vscode/
 
 # Data files — CSV price data is too large for git
-data/
+/data/
 *.csv
 !tests/fixtures/**/*.csv
 *.xlsx
